@@ -1,0 +1,21 @@
+# CounterFlow v1.0.0 — Python Dependencies
+# ==========================================
+# Install all dependencies with:
+#     pip install -r requirements.txt
+#
+# Python version: 3.11+ recommended
+# ==========================================
+
+# ── UI Framework ──────────────────────────
+PyQt6==6.7.0
+
+# ── Database ORM ──────────────────────────
+SQLAlchemy==2.0.30
+
+# ── PDF Generation ────────────────────────
+reportlab==4.2.0
+
+# ── EXE Packaging (dev only) ──────────────
+# Run: pip install pyinstaller
+# Then: python build.spec  OR  see build.bat
+pyinstaller==6.8.0

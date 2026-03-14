@@ -1,0 +1,238 @@
+"""
+CounterFlow v1.0.0 — Sales History Screen
+==========================================
+Split panel. Left: invoice list. Right: invoice detail.
+Click any invoice to see its line items and grand total.
+Matches approved CounterFlow design exactly.
+"""
+
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QTableWidget, QTableWidgetItem, QHeaderView,
+    QSplitter, QFrame
+)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QColor
+
+from app.core.report_generator import CounterFlowReportGenerator
+from app import theme as t
+
+
+class CounterFlowSalesHistoryScreen(QWidget):
+    """CounterFlow — Sales History Screen."""
+
+    def __init__(self, counterflow_session, parent=None):
+        super().__init__(parent)
+        self.counterflow_session  = counterflow_session
+        self.counterflow_reporter = CounterFlowReportGenerator(counterflow_session)
+        self._counterflow_invoices = []
+        self._counterflow_build()
+        self.counterflow_refresh()
+
+    def _counterflow_build(self):
+        counterflow_layout = QVBoxLayout(self)
+        counterflow_layout.setContentsMargins(32, 28, 32, 28)
+        counterflow_layout.setSpacing(20)
+
+        counterflow_title = QLabel("Sales History")
+        counterflow_title_font = QFont("Segoe UI", 20)
+        counterflow_title_font.setWeight(QFont.Weight.Bold)
+        counterflow_title.setFont(counterflow_title_font)
+        counterflow_layout.addWidget(counterflow_title)
+
+        # ── Splitter ───────────────────────────────────────────
+        counterflow_splitter = QSplitter(Qt.Orientation.Horizontal)
+        counterflow_splitter.setHandleWidth(1)
+
+        # Left: Invoice list
+        counterflow_left = self._counterflow_build_invoice_list()
+        counterflow_splitter.addWidget(counterflow_left)
+
+        # Right: Invoice detail
+        counterflow_right = self._counterflow_build_invoice_detail()
+        counterflow_splitter.addWidget(counterflow_right)
+
+        counterflow_splitter.setSizes([480, 600])
+        counterflow_layout.addWidget(counterflow_splitter)
+
+    def _counterflow_build_invoice_list(self) -> QWidget:
+        counterflow_widget = QWidget()
+        counterflow_layout = QVBoxLayout(counterflow_widget)
+        counterflow_layout.setContentsMargins(0, 0, 8, 0)
+        counterflow_layout.setSpacing(0)
+
+        self._counterflow_invoice_table = QTableWidget()
+        self._counterflow_invoice_table.setColumnCount(5)
+        self._counterflow_invoice_table.setHorizontalHeaderLabels(
+            ["Invoice #", "Customer", "Total", "Method", "Date"]
+        )
+        self._counterflow_invoice_table.setShowGrid(False)
+        self._counterflow_invoice_table.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )
+        self._counterflow_invoice_table.setSelectionBehavior(
+            QTableWidget.SelectionBehavior.SelectRows
+        )
+        self._counterflow_invoice_table.verticalHeader().setVisible(False)
+        self._counterflow_invoice_table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeMode.Stretch
+        )
+        self._counterflow_invoice_table.currentCellChanged.connect(
+            self._counterflow_on_invoice_selected
+        )
+        counterflow_layout.addWidget(self._counterflow_invoice_table)
+        return counterflow_widget
+
+    def _counterflow_build_invoice_detail(self) -> QWidget:
+        thm = t.counterflow_theme()
+        counterflow_widget = QWidget()
+        counterflow_layout = QVBoxLayout(counterflow_widget)
+        counterflow_layout.setContentsMargins(8, 0, 0, 0)
+        counterflow_layout.setSpacing(16)
+
+        self._counterflow_detail_title = QLabel("Select an invoice to view details")
+        counterflow_detail_font = QFont("Segoe UI", 15)
+        counterflow_detail_font.setWeight(QFont.Weight.Bold)
+        self._counterflow_detail_title.setFont(counterflow_detail_font)
+        counterflow_layout.addWidget(self._counterflow_detail_title)
+
+        # Items table
+        self._counterflow_items_table = QTableWidget()
+        self._counterflow_items_table.setColumnCount(4)
+        self._counterflow_items_table.setHorizontalHeaderLabels(
+            ["Product", "Unit Price", "Qty", "Total"]
+        )
+        self._counterflow_items_table.setShowGrid(False)
+        self._counterflow_items_table.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )
+        self._counterflow_items_table.verticalHeader().setVisible(False)
+        self._counterflow_items_table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeMode.Stretch
+        )
+        counterflow_layout.addWidget(self._counterflow_items_table)
+
+        # Grand total row
+        counterflow_total_row = QHBoxLayout()
+        counterflow_total_lbl = QLabel("Grand Total")
+        counterflow_total_lbl.setStyleSheet(
+            f"font-weight: 700; font-size: 14px; color: {thm['text_primary']};"
+        )
+        self._counterflow_grand_total = QLabel("—")
+        self._counterflow_grand_total.setStyleSheet(
+            f"font-weight: 700; font-size: 15px; color: {thm['text_primary']};"
+        )
+        self._counterflow_grand_total.setAlignment(Qt.AlignmentFlag.AlignRight)
+        counterflow_total_row.addWidget(counterflow_total_lbl)
+        counterflow_total_row.addStretch()
+        counterflow_total_row.addWidget(self._counterflow_grand_total)
+        counterflow_layout.addLayout(counterflow_total_row)
+
+        return counterflow_widget
+
+    def counterflow_refresh(self):
+        """CounterFlow — Reload invoice list from DB."""
+        thm = t.counterflow_theme()
+        self._counterflow_invoices = self.counterflow_reporter.counterflow_recent_invoices(
+            limit=100
+        )
+        self._counterflow_invoice_table.setRowCount(
+            len(self._counterflow_invoices)
+        )
+
+        for row, inv in enumerate(self._counterflow_invoices):
+            self._counterflow_invoice_table.setRowHeight(
+                row, t.COUNTERFLOW_TABLE_ROW_HEIGHT
+            )
+            customer_name = (
+                inv.counterflow_customer.counterflow_name
+                if inv.counterflow_customer else "Walk-in"
+            )
+            self._counterflow_invoice_table.setItem(
+                row, 0, self._cf_item(inv.counterflow_invoice_number)
+            )
+            self._counterflow_invoice_table.setItem(
+                row, 1, self._cf_item(customer_name)
+            )
+            self._counterflow_invoice_table.setItem(
+                row, 2,
+                self._cf_item(f"₹{inv.counterflow_total_amount:,.0f}")
+            )
+            # Payment badge
+            badge = self._counterflow_payment_badge(inv.counterflow_payment_method)
+            self._counterflow_invoice_table.setCellWidget(row, 3, badge)
+
+            self._counterflow_invoice_table.setItem(
+                row, 4,
+                self._cf_item(
+                    inv.counterflow_created_at.strftime("%Y-%m-%d %I:%M %p")
+                )
+            )
+
+    def _counterflow_on_invoice_selected(self, row, *_):
+        """CounterFlow — Load invoice detail when row is clicked."""
+        if row < 0 or row >= len(self._counterflow_invoices):
+            return
+
+        inv = self._counterflow_invoices[row]
+        self._counterflow_detail_title.setText(
+            f"Invoice Detail: {inv.counterflow_invoice_number}"
+        )
+
+        counterflow_items = inv.counterflow_items
+        self._counterflow_items_table.setRowCount(len(counterflow_items))
+
+        for r, item in enumerate(counterflow_items):
+            self._counterflow_items_table.setRowHeight(
+                r, t.COUNTERFLOW_TABLE_ROW_HEIGHT
+            )
+            self._counterflow_items_table.setItem(
+                r, 0,
+                self._cf_item(item.counterflow_product.counterflow_name)
+            )
+            self._counterflow_items_table.setItem(
+                r, 1,
+                self._cf_item(f"₹{item.counterflow_unit_price:,.2f}")
+            )
+            self._counterflow_items_table.setItem(
+                r, 2,
+                self._cf_item(str(item.counterflow_quantity))
+            )
+            self._counterflow_items_table.setItem(
+                r, 3,
+                self._cf_item(f"₹{item.counterflow_line_total:,.2f}")
+            )
+
+        self._counterflow_grand_total.setText(
+            f"₹{inv.counterflow_total_amount:,.2f}"
+        )
+
+    def _counterflow_payment_badge(self, method: str) -> QWidget:
+        thm = t.counterflow_theme()
+        badge = QLabel(method)
+        badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        if method == "UPI":
+            bg, fg = thm["upi_light"],      thm["upi_text"]
+        elif method == "CASH":
+            bg, fg = thm["cash_light"],     thm["cash_text"]
+        else:
+            bg, fg = thm["warning_light"],  thm["warning_text"]
+
+        badge.setStyleSheet(f"""
+            background: {bg};
+            color: {fg};
+            border-radius: 10px;
+            padding: 2px 10px;
+            font-size: 11px;
+            font-weight: 600;
+        """)
+        wrapper = QWidget()
+        wl = QHBoxLayout(wrapper)
+        wl.setContentsMargins(4, 4, 4, 4)
+        wl.addWidget(badge)
+        return wrapper
+
+    def _cf_item(self, text: str) -> QTableWidgetItem:
+        item = QTableWidgetItem(text)
+        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        return item

@@ -1,18 +1,17 @@
 """
 CounterFlow v1.0.0 — Customer Manager
-=======================================
-Handles all customer operations for CounterFlow.
-Mobile number is the primary customer identifier.
-New customers are auto-created at checkout if not found.
-
-Class:
-    CounterFlowCustomerManager — All customer operations
+======================================
+Handles all customer-related operations:
+Lookup, creation, search, update, and
+credit balance management.
 """
 
 from typing import Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from app.db.models import CounterFlowCustomer
+from app.utils.validators import counterflow_validate_mobile
 from app.config import (
     COUNTERFLOW_DEFAULT_CREDIT_LIMIT,
     COUNTERFLOW_DEBUG,
@@ -78,16 +77,6 @@ class CounterFlowCustomerManager:
             .all()
         )
 
-    def counterflow_get_customers_with_credit(self) -> list[CounterFlowCustomer]:
-        """CounterFlow — Returns all customers with outstanding credit balance."""
-        return (
-            self.counterflow_session
-            .query(CounterFlowCustomer)
-            .filter(CounterFlowCustomer.counterflow_credit_balance > 0)
-            .order_by(CounterFlowCustomer.counterflow_credit_balance.desc())
-            .all()
-        )
-
     # ── Create ─────────────────────────────────────────────────
 
     def counterflow_get_or_create(
@@ -129,49 +118,6 @@ class CounterFlowCustomerManager:
             )
 
         return counterflow_customer, True
-
-    def counterflow_create_customer(
-        self,
-        mobile:       str,
-        name:         str,
-        credit_limit: float = None,
-    ) -> CounterFlowCustomer:
-        """
-        CounterFlow — Explicitly create a new customer.
-        Raises ValueError if mobile already exists.
-        """
-        if self.counterflow_mobile_exists(mobile):
-            raise ValueError(
-                f"[CounterFlow] Mobile number '{mobile}' already registered."
-            )
-
-        counterflow_customer = CounterFlowCustomer(
-            counterflow_mobile=mobile.strip(),
-            counterflow_name=name.strip(),
-            counterflow_credit_limit=credit_limit or COUNTERFLOW_DEFAULT_CREDIT_LIMIT,
-            counterflow_credit_balance=0.0,
-        )
-        self.counterflow_session.add(counterflow_customer)
-        self.counterflow_session.flush()
-        return counterflow_customer
-
-    def counterflow_update_customer(
-        self,
-        customer_id:  int,
-        name:         str   = None,
-        credit_limit: float = None,
-    ) -> CounterFlowCustomer:
-        """CounterFlow — Update customer name or credit limit."""
-        counterflow_customer = self.counterflow_get_by_id(customer_id)
-        if not counterflow_customer:
-            raise ValueError(f"[CounterFlow] Customer ID {customer_id} not found.")
-
-        if name         is not None:
-            counterflow_customer.counterflow_name         = name.strip()
-        if credit_limit is not None:
-            counterflow_customer.counterflow_credit_limit = credit_limit
-
-        return counterflow_customer
 
     # ── Credit Operations ──────────────────────────────────────
 
@@ -259,11 +205,12 @@ class CounterFlowCustomerManager:
             .first()
         ) is not None
 
+    # ── CounterFlow Validation ─────────────────────────────────
+
     @staticmethod
-    def counterflow_validate_mobile(mobile: str) -> bool:
+    def counterflow_validate_mobile(mobile: str) -> tuple:
         """
-        CounterFlow — Basic mobile number validation.
-        Accepts 10-digit Indian mobile numbers.
+        CounterFlow — Delegates to the authoritative validator
+        in app.utils.validators.
         """
-        counterflow_cleaned = mobile.strip().replace(" ", "").replace("-", "")
-        return counterflow_cleaned.isdigit() and len(counterflow_cleaned) == 10
+        return counterflow_validate_mobile(mobile)

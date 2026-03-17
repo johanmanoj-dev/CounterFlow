@@ -17,7 +17,7 @@ Logical constraints enforced here:
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
-    QHeaderView, QFrame, QMessageBox, QSizePolicy
+    QHeaderView, QFrame, QMessageBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QKeySequence, QShortcut
@@ -82,7 +82,7 @@ class CounterFlowPOSScreen(QWidget):
 
         # Title
         counterflow_title = QLabel("New Bill — POS")
-        counterflow_title_font = QFont("Segoe UI", 20)
+        counterflow_title_font = QFont("Segoe UI", 23)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_layout.addWidget(counterflow_title)
@@ -93,13 +93,13 @@ class CounterFlowPOSScreen(QWidget):
 
         self._counterflow_barcode_input = QLineEdit()
         self._counterflow_barcode_input.setPlaceholderText("Scan or enter barcode...")
-        self._counterflow_barcode_input.setMinimumHeight(44)
+        self._counterflow_barcode_input.setMinimumHeight(50)
         self._counterflow_barcode_input.returnPressed.connect(
             self._counterflow_on_barcode_entered
         )
 
         counterflow_add_btn = QPushButton("+ Add")
-        counterflow_add_btn.setMinimumHeight(44)
+        counterflow_add_btn.setMinimumHeight(50)
         counterflow_add_btn.setMinimumWidth(80)
         counterflow_add_btn.clicked.connect(self._counterflow_on_barcode_entered)
 
@@ -132,7 +132,7 @@ class CounterFlowPOSScreen(QWidget):
         # Item count
         self._counterflow_item_count_label = QLabel("0 items in cart")
         self._counterflow_item_count_label.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 12px;"
+            f"color: {thm['text_secondary']}; font-size: 15px;"
         )
         counterflow_layout.addWidget(self._counterflow_item_count_label)
 
@@ -169,7 +169,7 @@ class CounterFlowPOSScreen(QWidget):
                 border: 1px solid {thm['border']};
             }}
         """)
-        self._counterflow_total_card.setMinimumHeight(110)
+        self._counterflow_total_card.setMinimumHeight(116)
 
         counterflow_total_layout = QVBoxLayout(self._counterflow_total_card)
         counterflow_total_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -177,11 +177,11 @@ class CounterFlowPOSScreen(QWidget):
         counterflow_total_title = QLabel("Total Amount")
         counterflow_total_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         counterflow_total_title.setStyleSheet(
-            "color: rgba(255,255,255,0.7); font-size: 13px; background: transparent; border: none;"
+            "color: rgba(255,255,255,0.7); font-size: 16px; background: transparent; border: none;"
         )
 
         self._counterflow_total_label = QLabel("₹0.00")
-        counterflow_total_font = QFont("Segoe UI", 28)
+        counterflow_total_font = QFont("Segoe UI", 31)
         counterflow_total_font.setWeight(QFont.Weight.Bold)
         self._counterflow_total_label.setFont(counterflow_total_font)
         self._counterflow_total_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -235,14 +235,14 @@ class CounterFlowPOSScreen(QWidget):
 
         self._counterflow_find_btn = QPushButton("Find")
         self._counterflow_find_btn.setFixedWidth(70)
-        self._counterflow_find_btn.setFixedHeight(40)
+        self._counterflow_find_btn.setFixedHeight(46)
         self._counterflow_find_btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
                 color: {thm['text_primary']};
                 border: 1.5px solid {thm['border']};
                 border-radius: 8px;
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -258,7 +258,7 @@ class CounterFlowPOSScreen(QWidget):
         # Customer status label
         self._counterflow_customer_info = QLabel("Customer: Walk-in Customer")
         self._counterflow_customer_info.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 12px;"
+            f"color: {thm['text_secondary']}; font-size: 15px;"
         )
         counterflow_cust_layout.addWidget(self._counterflow_customer_info)
 
@@ -302,7 +302,7 @@ class CounterFlowPOSScreen(QWidget):
         # ── Cancel button ──────────────────────────────────────
         counterflow_cancel_btn = QPushButton("Cancel Bill")
         counterflow_cancel_btn.setObjectName("counterflowDangerBtn")
-        counterflow_cancel_btn.setMinimumHeight(44)
+        counterflow_cancel_btn.setMinimumHeight(50)
         counterflow_cancel_btn.clicked.connect(self._counterflow_cancel_bill)
         counterflow_layout.addWidget(counterflow_cancel_btn)
 
@@ -311,14 +311,14 @@ class CounterFlowPOSScreen(QWidget):
 
     def _counterflow_pay_btn(self, label, color, bg) -> QPushButton:
         btn = QPushButton(label)
-        btn.setMinimumHeight(44)
+        btn.setMinimumHeight(50)
         btn.setStyleSheet(f"""
             QPushButton {{
                 background: transparent;
                 color: {color};
                 border: 1.5px solid {color};
                 border-radius: 8px;
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 700;
             }}
             QPushButton:hover {{
@@ -385,7 +385,7 @@ class CounterFlowPOSScreen(QWidget):
 
         # Customer status label colour
         self._counterflow_customer_info.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 12px;"
+            f"color: {thm['text_secondary']}; font-size: 15px;"
         )
 
         # Total card — always dark background with border
@@ -404,7 +404,7 @@ class CounterFlowPOSScreen(QWidget):
 
         # Item count label
         self._counterflow_item_count_label.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 12px;"
+            f"color: {thm['text_secondary']}; font-size: 15px;"
         )
 
         # Find button
@@ -414,7 +414,7 @@ class CounterFlowPOSScreen(QWidget):
                 color: {thm['text_primary']};
                 border: 1.5px solid {thm['border']};
                 border-radius: 8px;
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 600;
             }}
             QPushButton:hover {{
@@ -717,7 +717,7 @@ class CounterFlowPOSScreen(QWidget):
                     background: transparent;
                     color: {thm['text_secondary']};
                     border: none;
-                    font-size: 16px;
+                    font-size: 19px;
                     font-weight: bold;
                     border-radius: 4px;
                 }}

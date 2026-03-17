@@ -17,6 +17,7 @@ from PyQt6.QtGui import QFont, QColor
 
 from app.core.customer_manager import CounterFlowCustomerManager
 from app import theme as t
+from app.config import COUNTERFLOW_CREDIT_NEAR_LIMIT_PCT
 
 
 class CounterFlowCreditPaymentDialog(QDialog):
@@ -38,7 +39,7 @@ class CounterFlowCreditPaymentDialog(QDialog):
 
         counterflow_title = QLabel("Record Credit Payment")
         counterflow_title.setStyleSheet(
-            f"font-size: 16px; font-weight: 700; "
+            f"font-size: 19px; font-weight: 700; "
             f"color: {thm['text_primary']}; margin-bottom: 4px;"
         )
         counterflow_layout.addRow(counterflow_title)
@@ -94,7 +95,7 @@ class CounterFlowCustomersScreen(QWidget):
         counterflow_header = QHBoxLayout()
 
         counterflow_title = QLabel("Customers")
-        counterflow_title_font = QFont("Segoe UI", 20)
+        counterflow_title_font = QFont("Segoe UI", 23)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_header.addWidget(counterflow_title)
@@ -103,12 +104,12 @@ class CounterFlowCustomersScreen(QWidget):
         self._counterflow_search = QLineEdit()
         self._counterflow_search.setPlaceholderText("  🔍  Search customers...")
         self._counterflow_search.setMinimumWidth(240)
-        self._counterflow_search.setMinimumHeight(40)
+        self._counterflow_search.setMinimumHeight(46)
         self._counterflow_search.textChanged.connect(self.counterflow_refresh)
         counterflow_header.addWidget(self._counterflow_search)
 
         counterflow_pay_btn = QPushButton("💳  Record Credit Payment")
-        counterflow_pay_btn.setMinimumHeight(40)
+        counterflow_pay_btn.setMinimumHeight(46)
         counterflow_pay_btn.clicked.connect(self._counterflow_record_payment)
         counterflow_header.addWidget(counterflow_pay_btn)
 
@@ -131,10 +132,10 @@ class CounterFlowCustomersScreen(QWidget):
         self._counterflow_table.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeMode.Stretch
         )
-        self._counterflow_table.setColumnWidth(0, 50)
-        self._counterflow_table.setColumnWidth(2, 140)
-        self._counterflow_table.setColumnWidth(3, 120)
-        self._counterflow_table.setColumnWidth(4, 100)
+        self._counterflow_table.setColumnWidth(0, 85)
+        self._counterflow_table.setColumnWidth(2, 175)
+        self._counterflow_table.setColumnWidth(3, 155)
+        self._counterflow_table.setColumnWidth(4, 135)
         # Double-clicking a row opens the payment dialog directly,
         # so the cashier does not need to find and click the header button.
         self._counterflow_table.doubleClicked.connect(
@@ -180,13 +181,13 @@ class CounterFlowCustomersScreen(QWidget):
             )
             if c.counterflow_credit_balance == 0:
                 counterflow_balance_item.setForeground(QColor(thm["balance_zero"]))
-            elif c.counterflow_credit_balance >= c.counterflow_credit_limit * 0.8:
+            elif c.counterflow_credit_balance >= c.counterflow_credit_limit * COUNTERFLOW_CREDIT_NEAR_LIMIT_PCT:
                 counterflow_balance_item.setForeground(QColor(thm["balance_high"]))
             else:
                 counterflow_balance_item.setForeground(QColor(thm["balance_low"]))
 
             counterflow_balance_item.setFont(
-                QFont("Segoe UI", 13, QFont.Weight.Bold)
+                QFont("Segoe UI", 16, QFont.Weight.Bold)
             )
             self._counterflow_table.setItem(row, 3, counterflow_balance_item)
             self._counterflow_table.setItem(

@@ -43,36 +43,48 @@ class CounterFlowReportGenerator:
     def counterflow_all_time_summary(self) -> dict:
         """
         CounterFlow — Aggregate totals across the entire invoice history.
-        Used by the Financial Overview screen for lifetime revenue cards.
-        Returns the same key structure as counterflow_daily_summary().
+        Uses SQL-level aggregation (SUM + CASE) to avoid loading all
+        invoices into Python memory.
         """
-        counterflow_invoices = (
-            self.counterflow_session
-            .query(CounterFlowInvoice)
-            .all()
-        )
+        from sqlalchemy import case
 
-        counterflow_total  = sum(i.counterflow_total_amount for i in counterflow_invoices)
-        counterflow_cash   = sum(
-            i.counterflow_total_amount for i in counterflow_invoices
-            if i.counterflow_payment_method == COUNTERFLOW_PAYMENT_CASH
-        )
-        counterflow_upi    = sum(
-            i.counterflow_total_amount for i in counterflow_invoices
-            if i.counterflow_payment_method == COUNTERFLOW_PAYMENT_UPI
-        )
-        counterflow_credit = sum(
-            i.counterflow_total_amount for i in counterflow_invoices
-            if i.counterflow_payment_method == COUNTERFLOW_PAYMENT_CREDIT
+        counterflow_row = (
+            self.counterflow_session
+            .query(
+                func.coalesce(func.sum(CounterFlowInvoice.counterflow_total_amount), 0).label("total"),
+                func.coalesce(func.sum(
+                    case(
+                        (CounterFlowInvoice.counterflow_payment_method == COUNTERFLOW_PAYMENT_CASH,
+                         CounterFlowInvoice.counterflow_total_amount),
+                        else_=0,
+                    )
+                ), 0).label("cash"),
+                func.coalesce(func.sum(
+                    case(
+                        (CounterFlowInvoice.counterflow_payment_method == COUNTERFLOW_PAYMENT_UPI,
+                         CounterFlowInvoice.counterflow_total_amount),
+                        else_=0,
+                    )
+                ), 0).label("upi"),
+                func.coalesce(func.sum(
+                    case(
+                        (CounterFlowInvoice.counterflow_payment_method == COUNTERFLOW_PAYMENT_CREDIT,
+                         CounterFlowInvoice.counterflow_total_amount),
+                        else_=0,
+                    )
+                ), 0).label("credit"),
+                func.count(CounterFlowInvoice.counterflow_invoice_id).label("cnt"),
+            )
+            .one()
         )
 
         return {
-            "counterflow_total_sales":  counterflow_total,
-            "counterflow_cash_sales":   counterflow_cash,
-            "counterflow_upi_sales":    counterflow_upi,
-            "counterflow_credit_sales": counterflow_credit,
-            "counterflow_invoice_count": len(counterflow_invoices),
-            "counterflow_display_total": f"{COUNTERFLOW_CURRENCY_SYMBOL}{counterflow_total:,.2f}",
+            "counterflow_total_sales":   float(counterflow_row.total),
+            "counterflow_cash_sales":    float(counterflow_row.cash),
+            "counterflow_upi_sales":     float(counterflow_row.upi),
+            "counterflow_credit_sales":  float(counterflow_row.credit),
+            "counterflow_invoice_count": int(counterflow_row.cnt),
+            "counterflow_display_total": f"{COUNTERFLOW_CURRENCY_SYMBOL}{float(counterflow_row.total):,.2f}",
         }
 
     # ── Daily Summary ──────────────────────────────────────────
@@ -147,13 +159,6 @@ class CounterFlowReportGenerator:
             .limit(limit)
             .all()
         )
-
-    def counterflow_get_invoice_by_id(
-        self,
-        invoice_id: int
-    ) -> CounterFlowInvoice | None:
-        """CounterFlow — Retrieve a specific invoice with all its items."""
-        return self.counterflow_session.get(CounterFlowInvoice, invoice_id)
 
     def counterflow_invoices_by_date_range(
         self,

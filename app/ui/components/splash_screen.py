@@ -7,12 +7,11 @@ and "by CN-6" branding at the bottom center.
 Fades out once the main window is ready.
 """
 
-from PyQt6.QtWidgets import QSplashScreen, QLabel, QVBoxLayout, QWidget
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPixmap, QPainter, QColor, QFont, QPen, QBrush, QLinearGradient
+from PyQt6.QtWidgets import QSplashScreen
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QFont, QPen, QBrush
 from app.config import (
     COUNTERFLOW_APP_NAME,
-    COUNTERFLOW_VERSION,
     COUNTERFLOW_ICONS_DIR,
 )
 import os
@@ -61,9 +60,24 @@ class CounterFlowSplashScreen(QSplashScreen):
             "counterflow_logo.png"
         )
 
-        counterflow_logo_x = 120
-        counterflow_logo_y = (h // 2) - 30
-        counterflow_logo_size = 52
+        counterflow_logo_size = 90
+
+        # Define styles first so we can calculate text width
+        counterflow_name_font = QFont("Segoe UI", 32)
+        counterflow_name_font.setWeight(QFont.Weight.Bold)
+        painter.setFont(counterflow_name_font)
+        
+        # Calculate total width of logo + spacing + text
+        spacing = 10
+        fm = painter.fontMetrics()
+        text_width = fm.horizontalAdvance(COUNTERFLOW_APP_NAME)
+        total_width = counterflow_logo_size + spacing + text_width
+        
+        # Calculate starting X for the entire block to be centered
+        start_x = (w - total_width) // 2
+
+        counterflow_logo_x = start_x
+        counterflow_logo_y = (h // 2) - 45
 
         if os.path.exists(counterflow_logo_path):
             counterflow_logo = QPixmap(counterflow_logo_path).scaled(
@@ -89,13 +103,10 @@ class CounterFlowSplashScreen(QSplashScreen):
             )
 
         # ── App Name (right of logo, same line) ────────────────
-        counterflow_name_font = QFont("Segoe UI", 26)
-        counterflow_name_font.setWeight(QFont.Weight.Bold)
-        painter.setFont(counterflow_name_font)
         painter.setPen(QColor("#111827"))
 
-        counterflow_name_x = counterflow_logo_x + counterflow_logo_size + 14
-        counterflow_name_y = counterflow_logo_y + counterflow_logo_size - 10
+        counterflow_name_x = counterflow_logo_x + counterflow_logo_size + spacing
+        counterflow_name_y = counterflow_logo_y + (counterflow_logo_size // 2) + 15
 
         painter.drawText(
             counterflow_name_x,
@@ -108,8 +119,8 @@ class CounterFlowSplashScreen(QSplashScreen):
         painter.drawLine(40, h - 56, w - 40, h - 56)
 
         # ── "by CN-6" bottom center ────────────────────────────
-        counterflow_by_font = QFont("Segoe UI", 12)
-        counterflow_by_font.setWeight(QFont.Weight.Medium)
+        counterflow_by_font = QFont("Segoe UI", 15)
+        counterflow_by_font.setWeight(QFont.Weight.ExtraBold)
         counterflow_by_font.setLetterSpacing(
             QFont.SpacingType.AbsoluteSpacing,
             1.5

@@ -124,7 +124,10 @@ class CounterFlowInventoryManager:
         return (
             self.counterflow_session
             .query(CounterFlowProduct)
-            .filter_by(counterflow_barcode=barcode.strip())
+            .filter_by(
+                counterflow_barcode=barcode.strip(),
+                counterflow_is_active=True,
+            )
             .first()
         ) is not None
 
@@ -170,38 +173,6 @@ class CounterFlowInventoryManager:
 
         return counterflow_product
 
-    def counterflow_update_product(
-        self,
-        product_id: int,
-        name:       str   = None,
-        price:      float = None,
-    ) -> CounterFlowProduct:
-        """
-        CounterFlow — Update product name or price.
-        Stock quantity is managed through restock/deduct only.
-        """
-        counterflow_product = self.counterflow_get_by_id(product_id)
-        if not counterflow_product:
-            raise ValueError(f"[CounterFlow] Product ID {product_id} not found.")
-
-        if name  is not None:
-            counterflow_product.counterflow_name  = name.strip()
-        if price is not None:
-            counterflow_product.counterflow_price = price
-
-        counterflow_product.counterflow_updated_at = datetime.utcnow()
-        return counterflow_product
-
-    def counterflow_deactivate_product(self, product_id: int):
-        """
-        CounterFlow — Soft-delete a product by marking it inactive.
-        Historical invoice data referencing this product is preserved.
-        """
-        counterflow_product = self.counterflow_get_by_id(product_id)
-        if not counterflow_product:
-            raise ValueError(f"[CounterFlow] Product ID {product_id} not found.")
-        counterflow_product.counterflow_is_active = False
-
     # ── Stock Operations ───────────────────────────────────────
 
     def counterflow_restock(
@@ -221,7 +192,6 @@ class CounterFlowInventoryManager:
             raise ValueError("[CounterFlow] Restock quantity must be greater than zero.")
 
         counterflow_product.counterflow_stock_qty  += quantity
-        counterflow_product.counterflow_updated_at  = datetime.utcnow()
 
         self._counterflow_log_movement(
             product_id=product_id,
@@ -264,7 +234,6 @@ class CounterFlowInventoryManager:
             )
 
         counterflow_product.counterflow_stock_qty  -= quantity
-        counterflow_product.counterflow_updated_at  = datetime.utcnow()
 
         self._counterflow_log_movement(
             product_id=product_id,
@@ -275,19 +244,6 @@ class CounterFlowInventoryManager:
         )
 
         return counterflow_product
-
-    def counterflow_get_stock_movements(
-        self,
-        product_id: int
-    ) -> list[CounterFlowStockMovement]:
-        """CounterFlow — Retrieve full movement history for a product."""
-        return (
-            self.counterflow_session
-            .query(CounterFlowStockMovement)
-            .filter_by(counterflow_product_id=product_id)
-            .order_by(CounterFlowStockMovement.counterflow_timestamp.desc())
-            .all()
-        )
 
     # ── Internal Helpers ───────────────────────────────────────
 

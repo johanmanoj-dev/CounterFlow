@@ -25,7 +25,6 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
 from app.config import (
@@ -35,7 +34,6 @@ from app.config import (
     COUNTERFLOW_ICONS_DIR,
 )
 from app.db.database import (
-    CounterFlowDatabase,
     counterflow_init_db,
     counterflow_verify_connection,
     counterflow_get_session,

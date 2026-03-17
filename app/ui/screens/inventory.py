@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
     QHeaderView, QDialog, QFormLayout, QSpinBox,
-    QDoubleSpinBox, QDialogButtonBox, QMessageBox, QFrame
+    QDialogButtonBox, QMessageBox
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
@@ -18,6 +18,7 @@ from PyQt6.QtGui import QFont
 from app.core.inventory_manager import CounterFlowInventoryManager
 from app.ui.dialogs.add_product import CounterFlowAddProductDialog
 from app import theme as t
+from app.config import COUNTERFLOW_LOW_STOCK_THRESHOLD, COUNTERFLOW_STOCK_WARNING_THRESHOLD
 
 
 # ── Restock Dialog ─────────────────────────────────────────────
@@ -40,14 +41,14 @@ class CounterFlowRestockDialog(QDialog):
 
         counterflow_title = QLabel("Restock Product")
         counterflow_title.setStyleSheet(
-            f"font-size: 16px; font-weight: 700; "
+            f"font-size: 19px; font-weight: 700; "
             f"color: {thm['text_primary']}; margin-bottom: 4px;"
         )
         counterflow_layout.addRow(counterflow_title)
 
         counterflow_product_label = QLabel(product_name)
         counterflow_product_label.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 13px;"
+            f"color: {thm['text_secondary']}; font-size: 16px;"
         )
         counterflow_layout.addRow("Product:", counterflow_product_label)
 
@@ -93,7 +94,7 @@ class CounterFlowInventoryScreen(QWidget):
         self.counterflow_refresh()
 
     def _counterflow_build(self):
-        thm = t.counterflow_theme()
+        t.counterflow_theme()
         counterflow_layout = QVBoxLayout(self)
         counterflow_layout.setContentsMargins(32, 28, 32, 28)
         counterflow_layout.setSpacing(20)
@@ -102,7 +103,7 @@ class CounterFlowInventoryScreen(QWidget):
         counterflow_header = QHBoxLayout()
 
         counterflow_title = QLabel("Inventory")
-        counterflow_title_font = QFont("Segoe UI", 20)
+        counterflow_title_font = QFont("Segoe UI", 23)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_header.addWidget(counterflow_title)
@@ -111,18 +112,18 @@ class CounterFlowInventoryScreen(QWidget):
         self._counterflow_search = QLineEdit()
         self._counterflow_search.setPlaceholderText("  🔍  Search products...")
         self._counterflow_search.setMinimumWidth(240)
-        self._counterflow_search.setMinimumHeight(40)
+        self._counterflow_search.setMinimumHeight(46)
         self._counterflow_search.textChanged.connect(self.counterflow_refresh)
         counterflow_header.addWidget(self._counterflow_search)
 
         counterflow_add_btn = QPushButton("+ Add Product")
-        counterflow_add_btn.setMinimumHeight(40)
+        counterflow_add_btn.setMinimumHeight(46)
         counterflow_add_btn.clicked.connect(self._counterflow_add_product)
         counterflow_header.addWidget(counterflow_add_btn)
 
         counterflow_restock_btn = QPushButton("↺  Restock")
         counterflow_restock_btn.setObjectName("counterflowOutlineBtn")
-        counterflow_restock_btn.setMinimumHeight(40)
+        counterflow_restock_btn.setMinimumHeight(46)
         counterflow_restock_btn.clicked.connect(self._counterflow_restock)
         counterflow_header.addWidget(counterflow_restock_btn)
 
@@ -146,10 +147,10 @@ class CounterFlowInventoryScreen(QWidget):
         self._counterflow_table.horizontalHeader().setSectionResizeMode(
             2, QHeaderView.ResizeMode.Stretch
         )
-        self._counterflow_table.setColumnWidth(0, 50)
-        self._counterflow_table.setColumnWidth(1, 160)
-        self._counterflow_table.setColumnWidth(3, 100)
-        self._counterflow_table.setColumnWidth(4, 80)
+        self._counterflow_table.setColumnWidth(0, 85)
+        self._counterflow_table.setColumnWidth(1, 195)
+        self._counterflow_table.setColumnWidth(3, 135)
+        self._counterflow_table.setColumnWidth(4, 115)
         # Double-clicking a row opens the restock dialog directly.
         self._counterflow_table.doubleClicked.connect(self._counterflow_restock)
         counterflow_layout.addWidget(self._counterflow_table)
@@ -189,21 +190,24 @@ class CounterFlowInventoryScreen(QWidget):
 
     def _counterflow_stock_badge(self, qty: int) -> QWidget:
         thm = t.counterflow_theme()
-        if qty <= 5:
-            bg, fg = thm["stock_red_bg"],   thm["stock_red"]
-        elif qty <= 20:
-            bg, fg = thm["stock_amber_bg"], thm["stock_amber"]
+        if qty <= COUNTERFLOW_LOW_STOCK_THRESHOLD:
+            badge_bg = thm["stock_red_bg"]
+            badge_fg = thm["stock_red"]
+        elif qty <= COUNTERFLOW_STOCK_WARNING_THRESHOLD:
+            badge_bg = thm["stock_amber_bg"]
+            badge_fg = thm["stock_amber"]
         else:
-            bg, fg = thm["stock_green_bg"], thm["stock_green"]
+            badge_bg = thm["stock_green_bg"]
+            badge_fg = thm["stock_green"]
 
         badge = QLabel(str(qty))
         badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         badge.setFixedSize(36, 24)
         badge.setStyleSheet(f"""
-            background: {bg};
-            color: {fg};
+            background: {badge_bg};
+            color: {badge_fg};
             border-radius: 12px;
-            font-size: 12px;
+            font-size: 15px;
             font-weight: 700;
         """)
         wrapper = QWidget()

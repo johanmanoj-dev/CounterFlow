@@ -5,9 +5,8 @@ SQLAlchemy ORM table definitions for the CounterFlow
 retail management system.
 
 Tables:
-    CounterFlowProduct       — Stock items the shop sells
-    CounterFlowSupplier      — Suppliers who provide stock
-    CounterFlowStockMovement — Audit log of every stock change
+    CounterFlowProduct          — Product catalog
+    CounterFlowStockMovement    — Inventory audit trail
     CounterFlowCustomer      — Customer profiles and credit accounts
     CounterFlowInvoice       — Finalized sales bills
     CounterFlowInvoiceItem   — Line items within each invoice
@@ -45,8 +44,8 @@ class CounterFlowProduct(CounterFlowBase):
     counterflow_price           = Column(Float, nullable=False)
     counterflow_stock_qty       = Column(Integer, default=0, nullable=False)
     counterflow_is_active       = Column(Boolean, default=True)
-    counterflow_created_at      = Column(DateTime, default=datetime.utcnow)
-    counterflow_updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    counterflow_created_at      = Column(DateTime, default=datetime.now)
+    counterflow_updated_at      = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     # Relationships
     counterflow_stock_movements = relationship(
@@ -67,26 +66,6 @@ class CounterFlowProduct(CounterFlowBase):
             f"stock={self.counterflow_stock_qty})>"
         )
 
-
-# ──────────────────────────────────────────────────────────────
-class CounterFlowSupplier(CounterFlowBase):
-    """
-    CounterFlow — Supplier Table
-    Tracks suppliers who provide stock to the shop.
-    """
-    __tablename__ = "counterflow_suppliers"
-
-    counterflow_supplier_id     = Column(Integer, primary_key=True, autoincrement=True)
-    counterflow_supplier_name   = Column(String(255), nullable=False)
-    counterflow_contact         = Column(String(100), nullable=True)
-    counterflow_created_at      = Column(DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return (
-            f"<CounterFlowSupplier("
-            f"id={self.counterflow_supplier_id}, "
-            f"name='{self.counterflow_supplier_name}')>"
-        )
 
 
 # ──────────────────────────────────────────────────────────────
@@ -113,7 +92,7 @@ class CounterFlowStockMovement(CounterFlowBase):
     counterflow_quantity        = Column(Integer, nullable=False)
     counterflow_reason          = Column(String(255), nullable=True)
     counterflow_reference_id    = Column(Integer, nullable=True)   # invoice id for OUT
-    counterflow_timestamp       = Column(DateTime, default=datetime.utcnow)
+    counterflow_timestamp       = Column(DateTime, default=datetime.now)
 
     # Relationship
     counterflow_product = relationship(
@@ -145,7 +124,7 @@ class CounterFlowCustomer(CounterFlowBase):
     counterflow_name            = Column(String(255), nullable=False)
     counterflow_credit_balance  = Column(Float, default=0.0, nullable=False)
     counterflow_credit_limit    = Column(Float, default=5000.0, nullable=False)
-    counterflow_created_at      = Column(DateTime, default=datetime.utcnow)
+    counterflow_created_at      = Column(DateTime, default=datetime.now)
 
     # Relationship
     counterflow_invoices = relationship(
@@ -184,7 +163,7 @@ class CounterFlowInvoice(CounterFlowBase):
         nullable=False
     )
     counterflow_notes           = Column(Text, nullable=True)
-    counterflow_created_at      = Column(DateTime, default=datetime.utcnow)
+    counterflow_created_at      = Column(DateTime, default=datetime.now)
 
     # Relationships
     counterflow_customer = relationship(

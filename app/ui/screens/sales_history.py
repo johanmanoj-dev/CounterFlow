@@ -1,18 +1,18 @@
 """
 CounterFlow v1.0.0 — Sales History Screen
 ==========================================
-Split panel. Left: invoice list. Right: invoice detail.
+Split panel. Left: invoice list with search.
+Right: invoice detail.
 Click any invoice to see its line items and grand total.
-Matches approved CounterFlow design exactly.
 """
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QTableWidget, QTableWidgetItem, QHeaderView,
-    QSplitter, QFrame
+    QSplitter, QFrame, QLineEdit
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtGui import QFont
 
 from app.core.report_generator import CounterFlowReportGenerator
 from app import theme as t
@@ -35,14 +35,25 @@ class CounterFlowSalesHistoryScreen(QWidget):
         counterflow_layout.setSpacing(20)
 
         counterflow_title = QLabel("Sales History")
-        counterflow_title_font = QFont("Segoe UI", 20)
+        counterflow_title_font = QFont("Segoe UI", 23)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_layout.addWidget(counterflow_title)
 
         # ── Splitter ───────────────────────────────────────────
         counterflow_splitter = QSplitter(Qt.Orientation.Horizontal)
-        counterflow_splitter.setHandleWidth(1)
+        counterflow_splitter.setHandleWidth(6)
+        counterflow_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: transparent;
+            }
+            QSplitter::handle:hover {
+                background-color: #d1d5db; /* subtle indicator on hover */
+            }
+            QSplitter::handle:pressed {
+                background-color: #9ca3af; /* stronger when dragging */
+            }
+        """)
 
         # Left: Invoice list
         counterflow_left = self._counterflow_build_invoice_list()
@@ -52,7 +63,7 @@ class CounterFlowSalesHistoryScreen(QWidget):
         counterflow_right = self._counterflow_build_invoice_detail()
         counterflow_splitter.addWidget(counterflow_right)
 
-        counterflow_splitter.setSizes([480, 600])
+        counterflow_splitter.setSizes([520, 560])
         counterflow_layout.addWidget(counterflow_splitter, 1)
 
     def _counterflow_build_invoice_list(self) -> QWidget:
@@ -60,7 +71,18 @@ class CounterFlowSalesHistoryScreen(QWidget):
         counterflow_widget = QWidget()
         counterflow_layout = QVBoxLayout(counterflow_widget)
         counterflow_layout.setContentsMargins(0, 0, 8, 0)
-        counterflow_layout.setSpacing(0)
+        counterflow_layout.setSpacing(10)
+
+        # ── Search bar ─────────────────────────────────────────
+        self._counterflow_search_input = QLineEdit()
+        self._counterflow_search_input.setPlaceholderText(
+            "  Search by invoice number..."
+        )
+        self._counterflow_search_input.setMinimumHeight(46)
+        self._counterflow_search_input.textChanged.connect(
+            self._counterflow_on_search
+        )
+        counterflow_layout.addWidget(self._counterflow_search_input)
 
         # Wrap table in a card-like frame
         self._counterflow_list_card = QFrame()
@@ -77,9 +99,9 @@ class CounterFlowSalesHistoryScreen(QWidget):
         card_layout.setSpacing(0)
 
         self._counterflow_invoice_table = QTableWidget()
-        self._counterflow_invoice_table.setColumnCount(5)
+        self._counterflow_invoice_table.setColumnCount(4)
         self._counterflow_invoice_table.setHorizontalHeaderLabels(
-            ["Invoice #", "Customer", "Total", "Method", "Date"]
+            ["Invoice #", "Customer", "Total", "Date"]
         )
         self._counterflow_invoice_table.setShowGrid(False)
         self._counterflow_invoice_table.setEditTriggers(
@@ -92,6 +114,9 @@ class CounterFlowSalesHistoryScreen(QWidget):
         self._counterflow_invoice_table.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeMode.Stretch
         )
+        self._counterflow_invoice_table.setColumnWidth(0, 135)
+        self._counterflow_invoice_table.setColumnWidth(2, 115)
+        self._counterflow_invoice_table.setColumnWidth(3, 175)
         self._counterflow_invoice_table.setStyleSheet("""
             QTableWidget {
                 border: none;
@@ -113,14 +138,24 @@ class CounterFlowSalesHistoryScreen(QWidget):
         counterflow_layout.setContentsMargins(8, 0, 0, 0)
         counterflow_layout.setSpacing(16)
 
-        # Detail title (above the card)
+        # Detail header row: title + payment badge
+        counterflow_header_row = QHBoxLayout()
+        counterflow_header_row.setSpacing(12)
         self._counterflow_detail_title = QLabel("Select an invoice to view details")
-        counterflow_detail_font = QFont("Segoe UI", 15)
+        counterflow_detail_font = QFont("Segoe UI", 18)
         counterflow_detail_font.setWeight(QFont.Weight.Bold)
         self._counterflow_detail_title.setFont(counterflow_detail_font)
-        counterflow_layout.addWidget(self._counterflow_detail_title)
+        counterflow_header_row.addWidget(self._counterflow_detail_title)
 
-        # Wrap items table and grand total in a card-like frame
+        self._counterflow_detail_payment_badge = QLabel()
+        self._counterflow_detail_payment_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._counterflow_detail_payment_badge.setFixedHeight(32)
+        self._counterflow_detail_payment_badge.setVisible(False)
+        counterflow_header_row.addWidget(self._counterflow_detail_payment_badge)
+        counterflow_header_row.addStretch()
+        counterflow_layout.addLayout(counterflow_header_row)
+
+        # Detail card
         self._counterflow_detail_card = QFrame()
         self._counterflow_detail_card.setObjectName("counterflowDetailCard")
         self._counterflow_detail_card.setStyleSheet(f"""
@@ -131,14 +166,13 @@ class CounterFlowSalesHistoryScreen(QWidget):
             }}
         """)
         card_layout = QVBoxLayout(self._counterflow_detail_card)
-        card_layout.setContentsMargins(0, 0, 0, 12)
-        card_layout.setSpacing(8)
+        card_layout.setContentsMargins(0, 0, 0, 0)
+        card_layout.setSpacing(0)
 
-        # Items table
         self._counterflow_items_table = QTableWidget()
         self._counterflow_items_table.setColumnCount(4)
         self._counterflow_items_table.setHorizontalHeaderLabels(
-            ["Product", "Unit Price", "Qty", "Total"]
+            ["Product", "Price", "Qty", "Subtotal"]
         )
         self._counterflow_items_table.setShowGrid(False)
         self._counterflow_items_table.setEditTriggers(
@@ -168,11 +202,11 @@ class CounterFlowSalesHistoryScreen(QWidget):
         counterflow_total_row.setContentsMargins(16, 4, 16, 4)
         self._counterflow_total_lbl = QLabel("Grand Total")
         self._counterflow_total_lbl.setStyleSheet(
-            f"font-weight: 700; font-size: 14px; color: {thm['text_primary']};"
+            f"font-weight: 700; font-size: 17px; color: {thm['text_primary']};"
         )
-        self._counterflow_grand_total = QLabel("—")
+        self._counterflow_grand_total = QLabel("\u2014")
         self._counterflow_grand_total.setStyleSheet(
-            f"font-weight: 700; font-size: 15px; color: {thm['text_primary']};"
+            f"font-weight: 700; font-size: 18px; color: {thm['text_primary']};"
         )
         self._counterflow_grand_total.setAlignment(Qt.AlignmentFlag.AlignRight)
         counterflow_total_row.addWidget(self._counterflow_total_lbl)
@@ -184,17 +218,22 @@ class CounterFlowSalesHistoryScreen(QWidget):
 
         return counterflow_widget
 
+    # ── Data ───────────────────────────────────────────────────
+
     def counterflow_refresh(self):
-        """CounterFlow — Reload invoice list from DB."""
-        thm = t.counterflow_theme()
+        """CounterFlow \u2014 Reload invoice list from DB."""
         self._counterflow_invoices = self.counterflow_reporter.counterflow_recent_invoices(
             limit=100
         )
-        self._counterflow_invoice_table.setRowCount(
-            len(self._counterflow_invoices)
-        )
+        self._counterflow_search_input.clear()
+        self._counterflow_populate_table(self._counterflow_invoices)
 
-        for row, inv in enumerate(self._counterflow_invoices):
+    def _counterflow_populate_table(self, invoices: list):
+        """CounterFlow \u2014 Fill the invoice table with given invoice list."""
+        self._counterflow_displayed = invoices
+        self._counterflow_invoice_table.setRowCount(len(invoices))
+
+        for row, inv in enumerate(invoices):
             self._counterflow_invoice_table.setRowHeight(
                 row, t.COUNTERFLOW_TABLE_ROW_HEIGHT
             )
@@ -210,28 +249,56 @@ class CounterFlowSalesHistoryScreen(QWidget):
             )
             self._counterflow_invoice_table.setItem(
                 row, 2,
-                self._cf_item(f"₹{inv.counterflow_total_amount:,.0f}")
+                self._cf_item(f"\u20b9{inv.counterflow_total_amount:,.0f}")
             )
-            # Payment badge
-            badge = self._counterflow_payment_badge(inv.counterflow_payment_method)
-            self._counterflow_invoice_table.setCellWidget(row, 3, badge)
-
             self._counterflow_invoice_table.setItem(
-                row, 4,
+                row, 3,
                 self._cf_item(
-                    inv.counterflow_created_at.strftime("%Y-%m-%d %I:%M %p")
+                    inv.counterflow_created_at.strftime("%d %b %Y %I:%M %p")
                 )
             )
 
+    def _counterflow_on_search(self, text: str):
+        """CounterFlow \u2014 Filter invoices by invoice number as user types."""
+        query = text.strip().upper()
+        if not query:
+            self._counterflow_populate_table(self._counterflow_invoices)
+            return
+        filtered = [
+            inv for inv in self._counterflow_invoices
+            if query in inv.counterflow_invoice_number.upper()
+        ]
+        self._counterflow_populate_table(filtered)
+
+    # ── Detail ─────────────────────────────────────────────────
+
     def _counterflow_on_invoice_selected(self, row, *_):
-        """CounterFlow — Load invoice detail when row is clicked."""
-        if row < 0 or row >= len(self._counterflow_invoices):
+        """CounterFlow \u2014 Load invoice detail when row is clicked."""
+        displayed = getattr(self, '_counterflow_displayed', self._counterflow_invoices)
+        if row < 0 or row >= len(displayed):
             return
 
-        inv = self._counterflow_invoices[row]
+        inv = displayed[row]
         self._counterflow_detail_title.setText(
             f"Invoice Detail: {inv.counterflow_invoice_number}"
         )
+
+        # Show payment method badge
+        thm = t.counterflow_theme()
+        method = inv.counterflow_payment_method
+        if method == "UPI":
+            bg, fg = thm["upi_light"], thm["upi_text"]
+        elif method == "CASH":
+            bg, fg = thm["cash_light"], thm["cash_text"]
+        else:
+            bg, fg = thm["warning_light"], thm["warning_text"]
+        self._counterflow_detail_payment_badge.setText(method)
+        self._counterflow_detail_payment_badge.setStyleSheet(f"""
+            background: {bg}; color: {fg};
+            border-radius: 10px; padding: 2px 14px;
+            font-size: 15px; font-weight: 600;
+        """)
+        self._counterflow_detail_payment_badge.setVisible(True)
 
         counterflow_items = inv.counterflow_items
         self._counterflow_items_table.setRowCount(len(counterflow_items))
@@ -246,7 +313,7 @@ class CounterFlowSalesHistoryScreen(QWidget):
             )
             self._counterflow_items_table.setItem(
                 r, 1,
-                self._cf_item(f"₹{item.counterflow_unit_price:,.2f}")
+                self._cf_item(f"\u20b9{item.counterflow_unit_price:,.2f}")
             )
             self._counterflow_items_table.setItem(
                 r, 2,
@@ -254,12 +321,14 @@ class CounterFlowSalesHistoryScreen(QWidget):
             )
             self._counterflow_items_table.setItem(
                 r, 3,
-                self._cf_item(f"₹{item.counterflow_line_total:,.2f}")
+                self._cf_item(f"\u20b9{item.counterflow_line_total:,.2f}")
             )
 
         self._counterflow_grand_total.setText(
-            f"₹{inv.counterflow_total_amount:,.2f}"
+            f"\u20b9{inv.counterflow_total_amount:,.2f}"
         )
+
+    # ── Helpers ────────────────────────────────────────────────
 
     def _counterflow_payment_badge(self, method: str) -> QWidget:
         thm = t.counterflow_theme()
@@ -277,7 +346,7 @@ class CounterFlowSalesHistoryScreen(QWidget):
             color: {fg};
             border-radius: 10px;
             padding: 2px 10px;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 600;
         """)
         wrapper = QWidget()
@@ -287,13 +356,13 @@ class CounterFlowSalesHistoryScreen(QWidget):
         return wrapper
 
     def counterflow_refresh_theme(self):
-        """CounterFlow — Restyle labels, cards, and rebuild tables after theme change."""
+        """CounterFlow \u2014 Restyle labels, cards, and rebuild tables after theme change."""
         thm = t.counterflow_theme()
         self._counterflow_total_lbl.setStyleSheet(
-            f"font-weight: 700; font-size: 14px; color: {thm['text_primary']};"
+            f"font-weight: 700; font-size: 17px; color: {thm['text_primary']};"
         )
         self._counterflow_grand_total.setStyleSheet(
-            f"font-weight: 700; font-size: 15px; color: {thm['text_primary']};"
+            f"font-weight: 700; font-size: 18px; color: {thm['text_primary']};"
         )
         # Update card borders
         self._counterflow_list_card.setStyleSheet(f"""

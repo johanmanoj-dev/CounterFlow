@@ -8,13 +8,12 @@ Matches approved CounterFlow design exactly.
 """
 
 import csv
-import os
 from datetime import date, timedelta
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTableWidget, QTableWidgetItem,
     QHeaderView, QComboBox, QDateEdit, QFileDialog,
-    QMessageBox, QFrame, QSizePolicy
+    QMessageBox
 )
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QFont, QColor
@@ -45,7 +44,7 @@ class CounterFlowDatabaseScreen(QWidget):
 
         # ── Title ──────────────────────────────────────────────
         counterflow_title = QLabel("Database & Records")
-        counterflow_title_font = QFont("Segoe UI", 20)
+        counterflow_title_font = QFont("Segoe UI", 23)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_layout.addWidget(counterflow_title)
@@ -66,7 +65,7 @@ class CounterFlowDatabaseScreen(QWidget):
 
         self._counterflow_to_lbl = QLabel("to")
         self._counterflow_to_lbl.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 13px;"
+            f"color: {thm['text_secondary']}; font-size: 16px;"
         )
 
         self._counterflow_to_date = QDateEdit()
@@ -127,13 +126,13 @@ class CounterFlowDatabaseScreen(QWidget):
 
         counterflow_apply_btn = QPushButton("Apply Filters")
         counterflow_apply_btn.setObjectName("counterflowOutlineBtn")
-        counterflow_apply_btn.setMinimumHeight(36)
+        counterflow_apply_btn.setMinimumHeight(42)
         counterflow_apply_btn.clicked.connect(self._counterflow_apply_filters)
         counterflow_filter_row2.addWidget(counterflow_apply_btn)
 
         counterflow_export_btn = QPushButton("⬇  Export CSV")
         counterflow_export_btn.setObjectName("counterflowOutlineBtn")
-        counterflow_export_btn.setMinimumHeight(36)
+        counterflow_export_btn.setMinimumHeight(42)
         counterflow_export_btn.clicked.connect(self._counterflow_export_csv)
         counterflow_filter_row2.addWidget(counterflow_export_btn)
 
@@ -145,7 +144,7 @@ class CounterFlowDatabaseScreen(QWidget):
 
         self._counterflow_showing_label = QLabel("Showing 0 records  |  Total amount: ₹0")
         self._counterflow_showing_label.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 12px;"
+            f"color: {thm['text_secondary']}; font-size: 15px;"
         )
         counterflow_summary_row.addWidget(self._counterflow_showing_label)
         counterflow_summary_row.addStretch()
@@ -177,11 +176,11 @@ class CounterFlowDatabaseScreen(QWidget):
             3, QHeaderView.ResizeMode.Stretch
         )
         self._counterflow_results_table.setColumnWidth(0, 30)
-        self._counterflow_results_table.setColumnWidth(1, 100)
-        self._counterflow_results_table.setColumnWidth(2, 120)
-        self._counterflow_results_table.setColumnWidth(4, 90)
-        self._counterflow_results_table.setColumnWidth(5, 90)
-        self._counterflow_results_table.setColumnWidth(6, 60)
+        self._counterflow_results_table.setColumnWidth(1, 135)
+        self._counterflow_results_table.setColumnWidth(2, 155)
+        self._counterflow_results_table.setColumnWidth(4, 125)
+        self._counterflow_results_table.setColumnWidth(5, 125)
+        self._counterflow_results_table.setColumnWidth(6, 95)
         self._counterflow_results_table.cellClicked.connect(
             self._counterflow_on_row_clicked
         )
@@ -196,7 +195,7 @@ class CounterFlowDatabaseScreen(QWidget):
             border: 1px solid {thm['border']};
             border-radius: 8px;
             padding: 6px 14px;
-            font-size: 13px;
+            font-size: 16px;
         """)
         return pill
 
@@ -206,11 +205,11 @@ class CounterFlowDatabaseScreen(QWidget):
         thm = t.counterflow_theme()
         # Summary label
         self._counterflow_showing_label.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 12px;"
+            f"color: {thm['text_secondary']}; font-size: 15px;"
         )
         # 'to' label
         self._counterflow_to_lbl.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 13px;"
+            f"color: {thm['text_secondary']}; font-size: 16px;"
         )
         # Summary pills
         pill_style = f"""
@@ -219,7 +218,7 @@ class CounterFlowDatabaseScreen(QWidget):
             border: 1px solid {thm['border']};
             border-radius: 8px;
             padding: 6px 14px;
-            font-size: 13px;
+            font-size: 16px;
         """
         self._counterflow_cash_summary.setStyleSheet(pill_style)
         self._counterflow_upi_summary.setStyleSheet(pill_style)
@@ -319,7 +318,7 @@ class CounterFlowDatabaseScreen(QWidget):
         self._counterflow_populate_table()
 
     def _counterflow_populate_table(self):
-        thm = t.counterflow_theme()
+        t.counterflow_theme()
         invoices = self._counterflow_current_invoices
 
         # Reset any open detail row — we're rebuilding from scratch
@@ -493,7 +492,7 @@ class CounterFlowDatabaseScreen(QWidget):
             color: {fg};
             border-radius: 10px;
             padding: 2px 10px;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 600;
         """)
         wrapper = QWidget()

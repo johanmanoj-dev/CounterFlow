@@ -17,6 +17,7 @@ from PyQt6.QtGui import QFont, QColor
 from app.ui.components.stat_card import CounterFlowStatCard
 from app.core.report_generator import CounterFlowReportGenerator
 from app import theme as t
+from app.config import COUNTERFLOW_CREDIT_NEAR_LIMIT_PCT
 
 
 class CounterFlowFinancialScreen(QWidget):
@@ -41,7 +42,7 @@ class CounterFlowFinancialScreen(QWidget):
 
         # Title
         counterflow_title = QLabel("Financials")
-        counterflow_title_font = QFont("Segoe UI", 20)
+        counterflow_title_font = QFont("Segoe UI", 23)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_layout.addWidget(counterflow_title)
@@ -101,7 +102,7 @@ class CounterFlowFinancialScreen(QWidget):
 
         self._counterflow_credit_heading = QLabel("Outstanding Credit")
         self._counterflow_credit_heading.setStyleSheet(
-            f"font-size: 15px; font-weight: 700; color: {thm['text_primary']};"
+            f"font-size: 18px; font-weight: 700; color: {thm['text_primary']};"
         )
         counterflow_layout.addWidget(self._counterflow_credit_heading)
 
@@ -118,10 +119,10 @@ class CounterFlowFinancialScreen(QWidget):
         self._counterflow_credit_table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.Stretch
         )
-        self._counterflow_credit_table.setColumnWidth(1, 110)
-        self._counterflow_credit_table.setColumnWidth(2, 80)
-        self._counterflow_credit_table.setColumnWidth(3, 70)
-        self._counterflow_credit_table.setColumnWidth(4, 100)
+        self._counterflow_credit_table.setColumnWidth(1, 145)
+        self._counterflow_credit_table.setColumnWidth(2, 135)
+        self._counterflow_credit_table.setColumnWidth(3, 135)
+        self._counterflow_credit_table.setColumnWidth(4, 135)
         counterflow_layout.addWidget(self._counterflow_credit_table)
         return counterflow_widget
 
@@ -134,7 +135,7 @@ class CounterFlowFinancialScreen(QWidget):
 
         self._counterflow_products_heading = QLabel("Top Products")
         self._counterflow_products_heading.setStyleSheet(
-            f"font-size: 15px; font-weight: 700; color: {thm['text_primary']};"
+            f"font-size: 18px; font-weight: 700; color: {thm['text_primary']};"
         )
         counterflow_layout.addWidget(self._counterflow_products_heading)
 
@@ -176,6 +177,25 @@ class CounterFlowFinancialScreen(QWidget):
             f"₹{all_time['counterflow_credit_sales']:,.0f}"
         )
 
+        # Monthly Growth — compare this month with last month
+        from datetime import date, timedelta
+        today = date.today()
+        first_this = today.replace(day=1)
+        last_prev  = first_this - timedelta(days=1)
+        first_prev = last_prev.replace(day=1)
+        this_month_invs  = self.counterflow_reporter.counterflow_invoices_by_date_range(first_this, today)
+        prev_month_invs  = self.counterflow_reporter.counterflow_invoices_by_date_range(first_prev, last_prev)
+        this_total = sum(i.counterflow_total_amount for i in this_month_invs)
+        prev_total = sum(i.counterflow_total_amount for i in prev_month_invs)
+        if prev_total > 0:
+            growth_pct = ((this_total - prev_total) / prev_total) * 100
+            sign = "+" if growth_pct >= 0 else ""
+            self._counterflow_card_growth.counterflow_set_value(f"{sign}{growth_pct:.1f}%")
+        elif this_total > 0:
+            self._counterflow_card_growth.counterflow_set_value("+100%")
+        else:
+            self._counterflow_card_growth.counterflow_set_value("—")
+
         # Outstanding Credit table
         self._counterflow_credit_table.setRowCount(len(credits))
         for row, c in enumerate(credits):
@@ -196,7 +216,7 @@ class CounterFlowFinancialScreen(QWidget):
                 counterflow_bal_item.flags() & ~Qt.ItemFlag.ItemIsEditable
             )
             usage = c["counterflow_usage_percent"]
-            if usage >= 80:
+            if usage >= COUNTERFLOW_CREDIT_NEAR_LIMIT_PCT * 100:
                 counterflow_bal_item.setForeground(QColor(thm["balance_high"]))
             elif usage >= 40:
                 counterflow_bal_item.setForeground(QColor(thm["balance_low"]))
@@ -233,7 +253,7 @@ class CounterFlowFinancialScreen(QWidget):
             """)
             counterflow_pct_label = QLabel(f"{usage}%")
             counterflow_pct_label.setStyleSheet(
-                f"color: {thm['text_secondary']}; font-size: 11px;"
+                f"color: {thm['text_secondary']}; font-size: 14px;"
             )
             counterflow_progress_widget = QWidget()
             counterflow_progress_layout = QVBoxLayout(counterflow_progress_widget)
@@ -267,10 +287,10 @@ class CounterFlowFinancialScreen(QWidget):
         after theme change so all colours are dark-mode-aware."""
         thm = t.counterflow_theme()
         self._counterflow_credit_heading.setStyleSheet(
-            f"font-size: 15px; font-weight: 700; color: {thm['text_primary']};"
+            f"font-size: 18px; font-weight: 700; color: {thm['text_primary']};"
         )
         self._counterflow_products_heading.setStyleSheet(
-            f"font-size: 15px; font-weight: 700; color: {thm['text_primary']};"
+            f"font-size: 18px; font-weight: 700; color: {thm['text_primary']};"
         )
         # Refresh stat cards
         for card in [

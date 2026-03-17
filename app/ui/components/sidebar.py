@@ -13,13 +13,12 @@ from PyQt6.QtWidgets import (
     QPushButton, QLabel, QFrame, QSpacerItem,
     QSizePolicy
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QSize
-from PyQt6.QtGui import QPixmap, QFont, QCursor, QIcon
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QPixmap, QFont, QCursor
 
 from app import theme as counterflow_theme_module
 from app.config import (
     COUNTERFLOW_APP_NAME,
-    COUNTERFLOW_VERSION,
     COUNTERFLOW_ICONS_DIR,
 )
 
@@ -78,7 +77,7 @@ class CounterFlowNavButton(QPushButton):
                 border-radius: 8px;
                 padding: 0px 12px;
                 text-align: left;
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 500;
             }}
             QPushButton:hover {{
@@ -182,7 +181,8 @@ class CounterFlowSidebar(QWidget):
         Logo and name are on the SAME horizontal line.
         """
         counterflow_header = QWidget()
-        counterflow_header.setFixedHeight(72)
+        counterflow_header.setFixedHeight(78)
+        counterflow_header.setStyleSheet("background: transparent;")
         counterflow_layout = QHBoxLayout(counterflow_header)
         counterflow_layout.setContentsMargins(4, 0, 4, 0)
         counterflow_layout.setSpacing(10)
@@ -201,7 +201,7 @@ class CounterFlowSidebar(QWidget):
         counterflow_name_col.setContentsMargins(0, 0, 0, 0)
 
         self._counterflow_name_label = QLabel(COUNTERFLOW_APP_NAME)
-        counterflow_name_font = QFont("Segoe UI", 13)
+        counterflow_name_font = QFont("Segoe UI", 16)
         counterflow_name_font.setWeight(QFont.Weight.Bold)
         self._counterflow_name_label.setFont(counterflow_name_font)
 
@@ -239,7 +239,7 @@ class CounterFlowSidebar(QWidget):
                 color: white;
                 border-radius: 6px;
                 font-weight: bold;
-                font-size: 11px;
+                font-size: 14px;
             """)
 
     def _counterflow_build_dark_toggle(self) -> QPushButton:
@@ -338,7 +338,7 @@ class CounterFlowSidebar(QWidget):
                 border-radius: 8px;
                 padding: 0px 12px;
                 text-align: left;
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 400;
             }}
             QPushButton:hover {{
@@ -351,8 +351,8 @@ class CounterFlowSidebar(QWidget):
         t = counterflow_theme_module.counterflow_theme()
         self._counterflow_credit_label.setStyleSheet(f"""
             color: {t['text_secondary']};
-            font-size: 10px;
-            font-weight: 300;
+            font-size: 13px;
+            font-weight: bold;
             letter-spacing: 1px;
             background: transparent;
             border: none;

@@ -10,9 +10,8 @@ accepting.
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QDoubleSpinBox,
-    QSpinBox, QFrame, QMessageBox, QWidget
+    QSpinBox, QFrame, QMessageBox
 )
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
 from app import theme as t
@@ -67,7 +66,7 @@ class CounterFlowAddProductDialog(QDialog):
         counterflow_header_label = QLabel(
             "Edit Product" if self._counterflow_is_edit else "Add New Product"
         )
-        counterflow_header_font = QFont("Segoe UI", 17)
+        counterflow_header_font = QFont("Segoe UI", 20)
         counterflow_header_font.setWeight(QFont.Weight.Bold)
         counterflow_header_label.setFont(counterflow_header_font)
         counterflow_root.addWidget(counterflow_header_label)
@@ -78,7 +77,7 @@ class CounterFlowAddProductDialog(QDialog):
             else "Fill in the details to add a new product to inventory."
         )
         counterflow_sub.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 12px; margin-bottom: 4px;"
+            f"color: {thm['text_secondary']}; font-size: 15px; margin-bottom: 4px;"
         )
         counterflow_root.addWidget(counterflow_sub)
         counterflow_root.addSpacing(20)
@@ -115,7 +114,7 @@ class CounterFlowAddProductDialog(QDialog):
         # Price
         counterflow_price_label = QLabel("Price *")
         counterflow_price_label.setStyleSheet(
-            f"font-size: 12px; font-weight: 600; color: {thm['text_secondary']};"
+            f"font-size: 15px; font-weight: 600; color: {thm['text_secondary']};"
         )
         counterflow_fields.addWidget(counterflow_price_label)
 
@@ -130,7 +129,7 @@ class CounterFlowAddProductDialog(QDialog):
         if not self._counterflow_is_edit:
             counterflow_qty_label = QLabel("Initial Stock Quantity")
             counterflow_qty_label.setStyleSheet(
-                f"font-size: 12px; font-weight: 600; color: {thm['text_secondary']};"
+                f"font-size: 15px; font-weight: 600; color: {thm['text_secondary']};"
             )
             counterflow_fields.addWidget(counterflow_qty_label)
 
@@ -151,13 +150,13 @@ class CounterFlowAddProductDialog(QDialog):
 
         counterflow_cancel_btn = QPushButton("Cancel")
         counterflow_cancel_btn.setObjectName("counterflowOutlineBtn")
-        counterflow_cancel_btn.setMinimumHeight(40)
+        counterflow_cancel_btn.setMinimumHeight(46)
         counterflow_cancel_btn.clicked.connect(self.reject)
 
         counterflow_save_btn = QPushButton(
             "Save Changes" if self._counterflow_is_edit else "Add Product"
         )
-        counterflow_save_btn.setMinimumHeight(40)
+        counterflow_save_btn.setMinimumHeight(46)
         counterflow_save_btn.setMinimumWidth(140)
         counterflow_save_btn.clicked.connect(self._counterflow_validate_and_accept)
 
@@ -178,7 +177,7 @@ class CounterFlowAddProductDialog(QDialog):
 
         counterflow_label = QLabel(label)
         counterflow_label.setStyleSheet(
-            f"font-size: 12px; font-weight: 600; color: {thm['text_secondary']};"
+            f"font-size: 15px; font-weight: 600; color: {thm['text_secondary']};"
         )
         layout.addWidget(counterflow_label)
 
@@ -190,7 +189,7 @@ class CounterFlowAddProductDialog(QDialog):
         if hint:
             counterflow_hint = QLabel(hint)
             counterflow_hint.setStyleSheet(
-                f"font-size: 11px; color: {thm['text_secondary']}; margin-top: -4px;"
+                f"font-size: 14px; color: {thm['text_secondary']}; margin-top: -4px;"
             )
             layout.addWidget(counterflow_hint)
 

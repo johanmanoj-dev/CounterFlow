@@ -13,13 +13,14 @@ from PyQt6.QtWidgets import (
     QFrame, QScrollArea, QGridLayout
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtGui import QFont
 
 from app.ui.components.stat_card import CounterFlowStatCard
 from app.core.report_generator import CounterFlowReportGenerator
 from app.core.inventory_manager import CounterFlowInventoryManager
 from app.core.customer_manager import CounterFlowCustomerManager
 from app import theme as t
+from app.utils.formatters import counterflow_format_relative_time
 
 
 class CounterFlowDashboardScreen(QWidget):
@@ -71,7 +72,7 @@ class CounterFlowDashboardScreen(QWidget):
         # ── Recent Invoices ────────────────────────────────────
         counterflow_recent_label = QLabel("Recent Invoices")
         counterflow_recent_label.setStyleSheet(
-            f"font-size: 16px; font-weight: 700; "
+            f"font-size: 19px; font-weight: 700; "
             f"color: {t.counterflow_theme()['text_primary']};"
         )
         counterflow_layout.addWidget(counterflow_recent_label)
@@ -97,7 +98,7 @@ class CounterFlowDashboardScreen(QWidget):
             counterflow_greet = "Good evening"
 
         counterflow_title = QLabel(f"{counterflow_greet}, Admin")
-        counterflow_title_font = QFont("Segoe UI", 22)
+        counterflow_title_font = QFont("Segoe UI", 25)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_title.setStyleSheet(
@@ -106,7 +107,7 @@ class CounterFlowDashboardScreen(QWidget):
 
         counterflow_sub = QLabel("Here's what's happening with your store today.")
         counterflow_sub.setStyleSheet(
-            f"color: {t.counterflow_theme()['text_secondary']}; font-size: 13px;"
+            f"color: {t.counterflow_theme()['text_secondary']}; font-size: 16px;"
         )
 
         counterflow_layout.addWidget(counterflow_title)
@@ -148,7 +149,7 @@ class CounterFlowDashboardScreen(QWidget):
         counterflow_table.setAlternatingRowColors(False)
         counterflow_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         counterflow_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        counterflow_table.setShowGrid(False)
+        counterflow_table.setShowGrid(True)
         counterflow_table.verticalHeader().setVisible(False)
         counterflow_table.horizontalHeader().setSectionResizeMode(
             1, QHeaderView.ResizeMode.Stretch
@@ -160,7 +161,7 @@ class CounterFlowDashboardScreen(QWidget):
 
     def counterflow_refresh(self):
         """CounterFlow — Refresh all dashboard data from DB."""
-        thm = t.counterflow_theme()
+        t.counterflow_theme()
 
         summary   = self.counterflow_reporter.counterflow_daily_summary()
         low_stock = self.counterflow_inventory.counterflow_get_low_stock_products()
@@ -245,7 +246,7 @@ class CounterFlowDashboardScreen(QWidget):
             color: {fg};
             border-radius: 10px;
             padding: 2px 10px;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 600;
         """)
         wrapper = QWidget()
@@ -255,18 +256,8 @@ class CounterFlowDashboardScreen(QWidget):
         return wrapper
 
     def _counterflow_format_time(self, dt: datetime) -> str:
-        # Use utcnow() — all CounterFlow timestamps are stored as UTC
-        now   = datetime.utcnow()
-        delta = now - dt
-        secs  = int(delta.total_seconds())
-        if secs < 60:
-            return "Just now"
-        elif secs < 3600:
-            return f"{secs // 60} min ago"
-        elif secs < 86400:
-            return f"{secs // 3600} hr ago"
-        else:
-            return dt.strftime("%d %b")
+        """CounterFlow — Delegates to the shared formatter utility."""
+        return counterflow_format_relative_time(dt)
 
     def counterflow_refresh_theme(self):
         """CounterFlow — Rebuild scrollable content after theme change.

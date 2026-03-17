@@ -11,7 +11,7 @@ Classes:
     CounterFlowBillingSession — The entire live bill before finalization
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 from app.db.models import CounterFlowProduct
 from app.config import (
@@ -35,15 +35,6 @@ class CounterFlowBillItem:
     def counterflow_line_total(self) -> float:
         """CounterFlow computed total for this line item."""
         return self.counterflow_product.counterflow_price * self.counterflow_quantity
-
-    @property
-    def counterflow_display_line(self) -> str:
-        """CounterFlow human-readable summary of this line item."""
-        return (
-            f"{self.counterflow_product.counterflow_name} × "
-            f"{self.counterflow_quantity} = "
-            f"{COUNTERFLOW_CURRENCY_SYMBOL}{self.counterflow_line_total:,.2f}"
-        )
 
     def __repr__(self):
         return (
@@ -70,7 +61,6 @@ class CounterFlowBillingSession:
     def __init__(self):
         self._counterflow_items: List[CounterFlowBillItem] = []
         self.counterflow_customer_id: Optional[int] = None
-        self.counterflow_customer_mobile: Optional[str] = None
         self.counterflow_customer_name: Optional[str] = None
 
     # ── Item Management ────────────────────────────────────────
@@ -115,28 +105,6 @@ class CounterFlowBillingSession:
         ]
         return len(self._counterflow_items) < original_count
 
-    def counterflow_update_quantity(self, product_id: int, quantity: int) -> bool:
-        """
-        CounterFlow — Update quantity of an item in the active bill.
-        If quantity <= 0, the item is removed entirely.
-        Returns True if item was found, False otherwise.
-        """
-        if quantity <= 0:
-            return self.counterflow_remove_item(product_id)
-
-        for item in self._counterflow_items:
-            if item.counterflow_product.counterflow_product_id == product_id:
-                item.counterflow_quantity = quantity
-                return True
-        return False
-
-    def counterflow_get_item(self, product_id: int) -> Optional[CounterFlowBillItem]:
-        """CounterFlow — Retrieve a specific bill item by product ID."""
-        for item in self._counterflow_items:
-            if item.counterflow_product.counterflow_product_id == product_id:
-                return item
-        return None
-
     # ── Customer Binding ───────────────────────────────────────
 
     def counterflow_bind_customer(
@@ -147,13 +115,11 @@ class CounterFlowBillingSession:
     ):
         """CounterFlow — Attach a customer profile to this billing session."""
         self.counterflow_customer_id     = customer_id
-        self.counterflow_customer_mobile = mobile
         self.counterflow_customer_name   = name
 
     def counterflow_clear_customer(self):
         """CounterFlow — Detach customer from this billing session."""
         self.counterflow_customer_id     = None
-        self.counterflow_customer_mobile = None
         self.counterflow_customer_name   = None
 
     # ── Session Properties ─────────────────────────────────────
@@ -184,11 +150,6 @@ class CounterFlowBillingSession:
         return len(self._counterflow_items) == 0
 
     @property
-    def counterflow_has_customer(self) -> bool:
-        """CounterFlow — True if a customer is attached to this session."""
-        return self.counterflow_customer_id is not None
-
-    @property
     def counterflow_display_total(self) -> str:
         """CounterFlow — Formatted total string for display."""
         return f"{COUNTERFLOW_CURRENCY_SYMBOL}{self.counterflow_total:,.2f}"
@@ -202,30 +163,7 @@ class CounterFlowBillingSession:
         """
         self._counterflow_items = []
         self.counterflow_customer_id     = None
-        self.counterflow_customer_mobile = None
         self.counterflow_customer_name   = None
-
-    def counterflow_summary(self) -> dict:
-        """
-        CounterFlow — Returns a summary dict of the current session.
-        Useful for logging and debugging.
-        """
-        return {
-            "counterflow_total":         self.counterflow_total,
-            "counterflow_item_count":    self.counterflow_item_count,
-            "counterflow_unique_items":  self.counterflow_unique_product_count,
-            "counterflow_customer_id":   self.counterflow_customer_id,
-            "counterflow_customer_name": self.counterflow_customer_name,
-            "counterflow_items": [
-                {
-                    "name":       item.counterflow_product.counterflow_name,
-                    "qty":        item.counterflow_quantity,
-                    "unit_price": item.counterflow_product.counterflow_price,
-                    "line_total": item.counterflow_line_total,
-                }
-                for item in self._counterflow_items
-            ],
-        }
 
     def __repr__(self):
         return (

@@ -9,7 +9,7 @@ Matches the approved CounterFlow design.
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QFrame
+    QLabel
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
@@ -52,7 +52,7 @@ class CounterFlowStatCard(QWidget):
         self._counterflow_change_positive = counterflow_change_positive
 
         self.setObjectName("counterflowCard")
-        self.setMinimumHeight(120)
+        self.setMinimumHeight(126)
         self.setMinimumWidth(180)
 
         self._counterflow_build(
@@ -98,7 +98,7 @@ class CounterFlowStatCard(QWidget):
         self._counterflow_value_label = QLabel(value)
         self._counterflow_value_label.setObjectName("counterflowCardValue")
 
-        counterflow_value_font = QFont("Segoe UI", 22)
+        counterflow_value_font = QFont("Segoe UI", 25)
         counterflow_value_font.setWeight(QFont.Weight.Bold)
         self._counterflow_value_label.setFont(counterflow_value_font)
 
@@ -157,24 +157,24 @@ class CounterFlowStatCard(QWidget):
             }}
             QLabel#counterflowCardTitle {{
                 color: {t['text_secondary']};
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 400;
             }}
             QLabel#counterflowCardIcon {{
                 color: {t['text_secondary']};
-                font-size: 16px;
+                font-size: 19px;
             }}
             QLabel#counterflowCardValue {{
                 color: {t['text_primary']};
             }}
             QLabel#counterflowCardChangePos {{
                 color: {t['success']};
-                font-size: 12px;
+                font-size: 15px;
                 font-weight: 500;
             }}
             QLabel#counterflowCardChangeNeg {{
                 color: {t['danger']};
-                font-size: 12px;
+                font-size: 15px;
                 font-weight: 500;
             }}
         """)

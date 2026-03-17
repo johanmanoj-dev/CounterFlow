@@ -7,7 +7,6 @@ and database initialization for CounterFlow.
 Usage:
     counterflow_init_db()          → creates all tables on first run
     counterflow_get_session()      → returns a working DB session
-    CounterFlowDatabase.instance() → singleton access anywhere in app
 """
 
 from sqlalchemy import create_engine, event, text
@@ -19,8 +18,6 @@ from app.config import (
     COUNTERFLOW_DB_URL,
     COUNTERFLOW_DB_ECHO_SQL,
     COUNTERFLOW_DEBUG,
-    COUNTERFLOW_APP_NAME,
-    COUNTERFLOW_VERSION,
 )
 
 
@@ -100,45 +97,3 @@ def counterflow_verify_connection() -> bool:
         print(f"[CounterFlow] Database connection failed: {counterflow_db_error}")
         return False
 
-
-# ──────────────────────────────────────────────────────────────
-class CounterFlowDatabase:
-    """
-    CounterFlow Database Singleton.
-    Provides a single shared session throughout the app lifetime.
-    Access via CounterFlowDatabase.instance()
-    """
-    _counterflow_instance = None
-    _counterflow_session: Session = None
-
-    @classmethod
-    def counterflow_initialize(cls):
-        """Initialize CounterFlow DB — call once at app startup."""
-        counterflow_init_db()
-        counterflow_verify_connection()
-        cls._counterflow_session = counterflow_get_session()
-        cls._counterflow_instance = cls()
-        if COUNTERFLOW_DEBUG:
-            print(f"[CounterFlow] {COUNTERFLOW_APP_NAME} v{COUNTERFLOW_VERSION} DB ready")
-
-    @classmethod
-    def instance(cls) -> "CounterFlowDatabase":
-        """Returns the CounterFlow database singleton."""
-        if cls._counterflow_instance is None:
-            raise RuntimeError(
-                "[CounterFlow] Database not initialized. "
-                "Call CounterFlowDatabase.counterflow_initialize() first."
-            )
-        return cls._counterflow_instance
-
-    @property
-    def session(self) -> Session:
-        """The active CounterFlow database session."""
-        return self._counterflow_session
-
-    def counterflow_close(self):
-        """Cleanly close the CounterFlow database session on app exit."""
-        if self._counterflow_session:
-            self._counterflow_session.close()
-            if COUNTERFLOW_DEBUG:
-                print("[CounterFlow] Database session closed.")

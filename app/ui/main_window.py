@@ -10,14 +10,13 @@ Handles bill-finalized refresh across screens.
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout,
-    QStackedWidget, QMessageBox
+    QStackedWidget
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QCloseEvent
 
 from app import theme as t
 from app.config import (
-    COUNTERFLOW_WINDOW_TITLE,
     COUNTERFLOW_APP_NAME,
     COUNTERFLOW_VERSION,
 )

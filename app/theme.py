@@ -111,14 +111,14 @@ COUNTERFLOW_COLORS = {
 }
 
 # ── CounterFlow Dimensions ─────────────────────────────────────
-COUNTERFLOW_SIDEBAR_WIDTH       = 240
+COUNTERFLOW_SIDEBAR_WIDTH       = 260
 COUNTERFLOW_CONTENT_PADDING     = 32
 COUNTERFLOW_CARD_RADIUS         = 12
-COUNTERFLOW_INPUT_HEIGHT        = 40
-COUNTERFLOW_BTN_HEIGHT          = 40
-COUNTERFLOW_TABLE_ROW_HEIGHT    = 52
-COUNTERFLOW_TABLE_HEADER_HEIGHT = 44
-COUNTERFLOW_NAV_ITEM_HEIGHT     = 44
+COUNTERFLOW_INPUT_HEIGHT        = 46
+COUNTERFLOW_BTN_HEIGHT          = 46
+COUNTERFLOW_TABLE_ROW_HEIGHT    = 60
+COUNTERFLOW_TABLE_HEADER_HEIGHT = 50
+COUNTERFLOW_NAV_ITEM_HEIGHT     = 50
 COUNTERFLOW_LOGO_SIZE           = 32
 
 # ── Active theme tracker ───────────────────────────────────────
@@ -158,7 +158,7 @@ def counterflow_build_stylesheet() -> str:
         background-color: {t['bg_app']};
         color: {t['text_primary']};
         font-family: 'Segoe UI', 'Inter', sans-serif;
-        font-size: 13px;
+        font-size: 16px;
         border: none;
         outline: none;
     }}
@@ -185,7 +185,7 @@ def counterflow_build_stylesheet() -> str:
         border-radius: 8px;
         padding: 6px 12px;
         color: {t['text_primary']};
-        font-size: 13px;
+        font-size: 16px;
         min-height: {COUNTERFLOW_INPUT_HEIGHT}px;
     }}
     QLineEdit:focus, QDateEdit:focus, QComboBox:focus,
@@ -221,7 +221,7 @@ def counterflow_build_stylesheet() -> str:
         border: none;
         border-radius: 8px;
         padding: 8px 18px;
-        font-size: 13px;
+        font-size: 16px;
         font-weight: 600;
         min-height: {COUNTERFLOW_BTN_HEIGHT}px;
     }}
@@ -258,7 +258,7 @@ def counterflow_build_stylesheet() -> str:
         border: 1px solid {t['border']};
         border-radius: 20px;
         padding: 5px 16px;
-        font-size: 12px;
+        font-size: 15px;
         font-weight: 500;
         min-height: 32px;
     }}
@@ -283,7 +283,7 @@ def counterflow_build_stylesheet() -> str:
         alternate-background-color: {t['table_row_alt']};
     }}
     QTableWidget::item {{
-        padding: 0px 16px;
+        padding: 0px 8px;
         border: none;
         color: {t['text_primary']};
     }}
@@ -297,9 +297,9 @@ def counterflow_build_stylesheet() -> str:
     QHeaderView::section {{
         background: {t['table_header_bg']};
         color: {t['table_header_text']};
-        font-size: 12px;
+        font-size: 15px;
         font-weight: 600;
-        padding: 0px 16px;
+        padding: 0px 8px;
         height: {COUNTERFLOW_TABLE_HEADER_HEIGHT}px;
         border: none;
         border-bottom: 1px solid {t['table_border']};

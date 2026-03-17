@@ -12,7 +12,6 @@ Classes:
 """
 
 from dataclasses import dataclass
-from typing import List, Optional
 from app.db.models import CounterFlowProduct
 from app.config import (
     COUNTERFLOW_MAX_BILL_ITEMS,
@@ -59,9 +58,9 @@ class CounterFlowBillingSession:
     """
 
     def __init__(self):
-        self._counterflow_items: List[CounterFlowBillItem] = []
-        self.counterflow_customer_id: Optional[int] = None
-        self.counterflow_customer_name: Optional[str] = None
+        self._counterflow_items: list[CounterFlowBillItem] = []
+        self.counterflow_customer_id: int | None = None
+        self.counterflow_customer_name: str | None = None
 
     # ── Item Management ────────────────────────────────────────
 
@@ -125,7 +124,7 @@ class CounterFlowBillingSession:
     # ── Session Properties ─────────────────────────────────────
 
     @property
-    def counterflow_items(self) -> List[CounterFlowBillItem]:
+    def counterflow_items(self) -> list[CounterFlowBillItem]:
         """CounterFlow — All items currently in the active bill."""
         return self._counterflow_items
 

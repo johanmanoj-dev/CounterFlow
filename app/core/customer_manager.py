@@ -6,7 +6,6 @@ Lookup, creation, search, update, and
 credit balance management.
 """
 
-from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
@@ -34,7 +33,7 @@ class CounterFlowCustomerManager:
     def counterflow_get_by_mobile(
         self,
         mobile: str
-    ) -> Optional[CounterFlowCustomer]:
+    ) -> CounterFlowCustomer | None:
         """
         CounterFlow — Look up a customer by mobile number.
         Primary lookup during POS checkout.
@@ -50,7 +49,7 @@ class CounterFlowCustomerManager:
     def counterflow_get_by_id(
         self,
         customer_id: int
-    ) -> Optional[CounterFlowCustomer]:
+    ) -> CounterFlowCustomer | None:
         """CounterFlow — Look up a customer by primary key."""
         return self.counterflow_session.get(CounterFlowCustomer, customer_id)
 

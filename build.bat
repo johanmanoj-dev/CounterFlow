@@ -28,7 +28,7 @@ echo.
 python --version >nul 2>&1
 if errorlevel 1 (
     echo  [ERROR] Python not found.
-    echo  Please install Python 3.11+ from https://python.org
+    echo  Please install Python 3.14+ from https://python.org
     echo  and make sure it is added to PATH.
     pause
     exit /b 1
@@ -38,7 +38,7 @@ if errorlevel 1 (
 pyinstaller --version >nul 2>&1
 if errorlevel 1 (
     echo  [INFO] PyInstaller not found. Installing...
-    pip install pyinstaller==6.8.0
+    pip install pyinstaller==6.15.0
     if errorlevel 1 (
         echo  [ERROR] Failed to install PyInstaller.
         pause

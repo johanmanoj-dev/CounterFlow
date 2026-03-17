@@ -10,7 +10,6 @@ Class:
 """
 
 from datetime import datetime
-from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.db.models import CounterFlowProduct, CounterFlowStockMovement
@@ -38,7 +37,7 @@ class CounterFlowInventoryManager:
     def counterflow_get_by_barcode(
         self,
         barcode: str
-    ) -> Optional[CounterFlowProduct]:
+    ) -> CounterFlowProduct | None:
         """
         CounterFlow — Look up a product by its barcode.
         Primary lookup method during POS barcode scanning.
@@ -57,7 +56,7 @@ class CounterFlowInventoryManager:
     def counterflow_get_by_id(
         self,
         product_id: int
-    ) -> Optional[CounterFlowProduct]:
+    ) -> CounterFlowProduct | None:
         """CounterFlow — Look up an active product by its primary key."""
         return (
             self.counterflow_session
@@ -101,7 +100,7 @@ class CounterFlowInventoryManager:
 
     def counterflow_get_low_stock_products(
         self,
-        threshold: int = None
+        threshold: int | None = None
     ) -> list[CounterFlowProduct]:
         """
         CounterFlow — Returns products at or below the low stock threshold.
@@ -252,8 +251,8 @@ class CounterFlowInventoryManager:
         product_id:    int,
         movement_type: str,
         quantity:      int,
-        reason:        str  = None,
-        reference_id:  int  = None,
+        reason:        str | None  = None,
+        reference_id:  int | None  = None,
     ):
         """
         CounterFlow — Internal method to create a StockMovement record.

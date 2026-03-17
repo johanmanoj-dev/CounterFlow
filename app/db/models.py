@@ -17,16 +17,18 @@ from sqlalchemy import (
     Column, Integer, String, Float,
     DateTime, ForeignKey, Enum, Text, Boolean, MetaData
 )
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship, DeclarativeBase
+
 
 # ── CounterFlow ORM Base ───────────────────────────────────────
-counterflow_metadata = MetaData(naming_convention={
-    "ix":  "counterflow_ix_%(column_0_label)s",
-    "uq":  "counterflow_uq_%(table_name)s_%(column_0_name)s",
-    "fk":  "counterflow_fk_%(table_name)s_%(column_0_name)s",
-    "pk":  "counterflow_pk_%(table_name)s",
-})
-CounterFlowBase = declarative_base(metadata=counterflow_metadata)
+class CounterFlowBase(DeclarativeBase):
+    """Modern SQLAlchemy 2.0 declarative base for all CounterFlow models."""
+    metadata = MetaData(naming_convention={
+        "ix":  "counterflow_ix_%(column_0_label)s",
+        "uq":  "counterflow_uq_%(table_name)s_%(column_0_name)s",
+        "fk":  "counterflow_fk_%(table_name)s_%(column_0_name)s",
+        "pk":  "counterflow_pk_%(table_name)s",
+    })
 
 
 # ──────────────────────────────────────────────────────────────

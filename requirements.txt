@@ -3,19 +3,19 @@
 # Install all dependencies with:
 #     pip install -r requirements.txt
 #
-# Python version: 3.11+ recommended
+# Python version: 3.14+ recommended
 # ==========================================
 
 # ── UI Framework ──────────────────────────
-PyQt6==6.7.0
+PyQt6==6.10.2
 
 # ── Database ORM ──────────────────────────
-SQLAlchemy==2.0.30
+SQLAlchemy==2.0.48
 
 # ── PDF Generation ────────────────────────
-reportlab==4.2.0
+reportlab==4.4.10
 
 # ── EXE Packaging (dev only) ──────────────
 # Run: pip install pyinstaller
 # Then: python build.spec  OR  see build.bat
-pyinstaller==6.8.0
+pyinstaller==6.15.0

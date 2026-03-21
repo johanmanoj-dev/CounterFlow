@@ -51,11 +51,11 @@ class CounterFlowFinancialScreen(QWidget):
         counterflow_cards_row = QHBoxLayout()
         counterflow_cards_row.setSpacing(16)
 
-        self._counterflow_card_revenue  = CounterFlowStatCard("Total Revenue",   "₹0", "$")
-        self._counterflow_card_growth   = CounterFlowStatCard("Monthly Growth",  "—",  "↗")
-        self._counterflow_card_cash     = CounterFlowStatCard("Cash Sales",      "₹0", "🗂")
-        self._counterflow_card_upi      = CounterFlowStatCard("UPI Sales",       "₹0", "↗")
-        self._counterflow_card_credit   = CounterFlowStatCard("Credit Sales",    "₹0", "💳")
+        self._counterflow_card_revenue  = CounterFlowStatCard("Total Revenue",   "₹0")
+        self._counterflow_card_growth   = CounterFlowStatCard("Monthly Growth",  "—", )
+        self._counterflow_card_cash     = CounterFlowStatCard("Cash Sales",      "₹0",)
+        self._counterflow_card_upi      = CounterFlowStatCard("UPI Sales",       "₹0",)
+        self._counterflow_card_credit   = CounterFlowStatCard("Credit Sales",    "₹0", )
 
         for card in [
             self._counterflow_card_revenue,
@@ -106,12 +106,25 @@ class CounterFlowFinancialScreen(QWidget):
         )
         counterflow_layout.addWidget(self._counterflow_credit_heading)
 
+        # Use a card frame for the grey background
+        self._counterflow_credit_card = QFrame()
+        self._counterflow_credit_card.setStyleSheet(f"""
+            QFrame {{
+                background: {thm['bg_surface']};
+                border: 1px solid {thm['card_border']};
+                border-radius: 12px;
+            }}
+        """)
+        credit_card_layout = QVBoxLayout(self._counterflow_credit_card)
+        credit_card_layout.setContentsMargins(1, 1, 1, 1)
+        credit_card_layout.setSpacing(0)
+
         self._counterflow_credit_table = QTableWidget()
         self._counterflow_credit_table.setColumnCount(5)
         self._counterflow_credit_table.setHorizontalHeaderLabels(
             ["Name", "Mobile", "Balance", "Limit", "Usage %"]
         )
-        self._counterflow_credit_table.setShowGrid(False)
+        self._counterflow_credit_table.setShowGrid(True)
         self._counterflow_credit_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
         )
@@ -119,11 +132,15 @@ class CounterFlowFinancialScreen(QWidget):
         self._counterflow_credit_table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.Stretch
         )
+        self._counterflow_credit_table.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         self._counterflow_credit_table.setColumnWidth(1, 145)
         self._counterflow_credit_table.setColumnWidth(2, 135)
         self._counterflow_credit_table.setColumnWidth(3, 135)
-        self._counterflow_credit_table.setColumnWidth(4, 135)
-        counterflow_layout.addWidget(self._counterflow_credit_table)
+        self._counterflow_credit_table.setColumnWidth(4, 85)
+        self._counterflow_credit_table.setStyleSheet("border: none; background: transparent;")
+        
+        credit_card_layout.addWidget(self._counterflow_credit_table)
+        counterflow_layout.addWidget(self._counterflow_credit_card)
         return counterflow_widget
 
     def _counterflow_build_products_table(self) -> QWidget:
@@ -139,12 +156,25 @@ class CounterFlowFinancialScreen(QWidget):
         )
         counterflow_layout.addWidget(self._counterflow_products_heading)
 
+        # Use a card frame for the grey background
+        self._counterflow_products_card = QFrame()
+        self._counterflow_products_card.setStyleSheet(f"""
+            QFrame {{
+                background: {thm['bg_surface']};
+                border: 1px solid {thm['card_border']};
+                border-radius: 12px;
+            }}
+        """)
+        products_card_layout = QVBoxLayout(self._counterflow_products_card)
+        products_card_layout.setContentsMargins(1, 1, 1, 1)
+        products_card_layout.setSpacing(0)
+
         self._counterflow_products_table = QTableWidget()
         self._counterflow_products_table.setColumnCount(3)
         self._counterflow_products_table.setHorizontalHeaderLabels(
             ["Product", "Units Sold", "Revenue"]
         )
-        self._counterflow_products_table.setShowGrid(False)
+        self._counterflow_products_table.setShowGrid(True)
         self._counterflow_products_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
         )
@@ -152,7 +182,13 @@ class CounterFlowFinancialScreen(QWidget):
         self._counterflow_products_table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeMode.Stretch
         )
-        counterflow_layout.addWidget(self._counterflow_products_table)
+        self._counterflow_products_table.setColumnWidth(1, 130)
+        self._counterflow_products_table.setColumnWidth(2, 140)
+        self._counterflow_products_table.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._counterflow_products_table.setStyleSheet("border: none; background: transparent;")
+        
+        products_card_layout.addWidget(self._counterflow_products_table)
+        counterflow_layout.addWidget(self._counterflow_products_card)
         return counterflow_widget
 
     def counterflow_refresh(self):
@@ -218,51 +254,19 @@ class CounterFlowFinancialScreen(QWidget):
             usage = c["counterflow_usage_percent"]
             if usage >= COUNTERFLOW_CREDIT_NEAR_LIMIT_PCT * 100:
                 counterflow_bal_item.setForeground(QColor(thm["balance_high"]))
-            elif usage >= 40:
-                counterflow_bal_item.setForeground(QColor(thm["balance_low"]))
-            else:
-                counterflow_bal_item.setForeground(QColor(thm["balance_zero"]))
+            counterflow_bal_item.setFont(
+                QFont("Segoe UI", 16, QFont.Weight.Bold)
+            )
+            counterflow_bal_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             self._counterflow_credit_table.setItem(row, 2, counterflow_bal_item)
 
             self._counterflow_credit_table.setItem(
                 row, 3,
                 self._cf_item(f"₹{c['counterflow_limit']:,.0f}")
             )
-
-            # Progress bar for usage %
-            counterflow_progress = QProgressBar()
-            counterflow_progress.setValue(int(usage))
-            counterflow_progress.setTextVisible(False)
-            counterflow_progress.setFixedHeight(8)
-            if usage >= 80:
-                color = thm["balance_high"]
-            elif usage >= 40:
-                color = thm["balance_low"]
-            else:
-                color = thm["balance_zero"]
-            counterflow_progress.setStyleSheet(f"""
-                QProgressBar {{
-                    background: {thm['border']};
-                    border-radius: 4px;
-                    border: none;
-                }}
-                QProgressBar::chunk {{
-                    background: {color};
-                    border-radius: 4px;
-                }}
-            """)
-            counterflow_pct_label = QLabel(f"{usage}%")
-            counterflow_pct_label.setStyleSheet(
-                f"color: {thm['text_secondary']}; font-size: 14px;"
-            )
-            counterflow_progress_widget = QWidget()
-            counterflow_progress_layout = QVBoxLayout(counterflow_progress_widget)
-            counterflow_progress_layout.setContentsMargins(4, 0, 4, 0)
-            counterflow_progress_layout.setSpacing(2)
-            counterflow_progress_layout.addWidget(counterflow_progress)
-            counterflow_progress_layout.addWidget(counterflow_pct_label)
-            self._counterflow_credit_table.setCellWidget(
-                row, 4, counterflow_progress_widget
+            self._counterflow_credit_table.setItem(
+                row, 4,
+                self._cf_item(f"{usage}%")
             )
 
         # Top Products table
@@ -306,4 +310,5 @@ class CounterFlowFinancialScreen(QWidget):
     def _cf_item(self, text: str) -> QTableWidgetItem:
         item = QTableWidgetItem(text)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         return item

@@ -13,6 +13,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.db.models import CounterFlowProduct, CounterFlowStockMovement
+from app.core.activity_logger import counterflow_log_action, CounterFlowActions
+from app.core.auth import counterflow_auth_session
 from app.config import (
     COUNTERFLOW_STOCK_IN,
     COUNTERFLOW_STOCK_OUT,
@@ -119,16 +121,30 @@ class CounterFlowInventoryManager:
         )
 
     def counterflow_barcode_exists(self, barcode: str) -> bool:
-        """CounterFlow — Check if a barcode already exists in the database."""
+        """
+        CounterFlow — Check if a barcode already exists in the database.
+        Checks ALL products including soft-deleted ones, because the
+        counterflow_barcode column has a UNIQUE constraint at the DB level.
+        """
         return (
             self.counterflow_session
             .query(CounterFlowProduct)
-            .filter_by(
-                counterflow_barcode=barcode.strip(),
-                counterflow_is_active=True,
-            )
+            .filter_by(counterflow_barcode=barcode.strip())
             .first()
         ) is not None
+
+    def counterflow_barcode_is_soft_deleted(self, barcode: str) -> bool:
+        """
+        CounterFlow — Returns True if the barcode belongs to a soft-deleted product.
+        Used to give a more helpful error message when re-adding a removed barcode.
+        """
+        product = (
+            self.counterflow_session
+            .query(CounterFlowProduct)
+            .filter_by(counterflow_barcode=barcode.strip())
+            .first()
+        )
+        return product is not None and not product.counterflow_is_active
 
     # ── Product Management ─────────────────────────────────────
 
@@ -145,8 +161,15 @@ class CounterFlowInventoryManager:
         Raises ValueError if barcode already exists.
         """
         if self.counterflow_barcode_exists(barcode):
+            if self.counterflow_barcode_is_soft_deleted(barcode):
+                raise ValueError(
+                    f"Barcode '{barcode}' belongs to a previously removed product. "
+                    f"Each barcode must be unique. Use a different barcode or "
+                    f"contact Admin to restore the old product."
+                )
             raise ValueError(
-                f"[CounterFlow] Barcode '{barcode}' already exists in inventory."
+                f"Barcode '{barcode}' already exists in inventory. "
+                f"Each barcode must be unique across all products."
             )
 
         counterflow_product = CounterFlowProduct(
@@ -170,7 +193,53 @@ class CounterFlowInventoryManager:
         if COUNTERFLOW_DEBUG:
             print(f"[CounterFlow] Product added: {counterflow_product}")
 
+        # Audit log
+        if counterflow_auth_session.counterflow_is_authenticated:
+            counterflow_log_action(
+                session=self.counterflow_session,
+                user_id=counterflow_auth_session.counterflow_user_id,
+                action_type=CounterFlowActions.INVENTORY_ADDED,
+                entity_type="product",
+                entity_id=counterflow_product.counterflow_product_id,
+                details=f"Name: {name} | Barcode: {barcode} | Price: ₹{price} | Stock: {stock_qty}",
+            )
+
         return counterflow_product
+
+    def counterflow_delete_product(self, product_id: int) -> str:
+        """
+        CounterFlow — Soft-delete a product from inventory (Admin only).
+        Sets counterflow_is_active = False so the product disappears from
+        all screens and POS lookups but historical invoice data stays intact.
+        Returns the product name for use in audit log / confirmation messages.
+        Raises ValueError if product not found.
+        """
+        product = (
+            self.counterflow_session
+            .query(CounterFlowProduct)
+            .filter_by(counterflow_product_id=product_id, counterflow_is_active=True)
+            .first()
+        )
+        if product is None:
+            raise ValueError(f"[CounterFlow] Product ID {product_id} not found.")
+
+        product_name = product.counterflow_name
+        product.counterflow_is_active = False
+
+        if counterflow_auth_session.counterflow_is_authenticated:
+            counterflow_log_action(
+                session=self.counterflow_session,
+                user_id=counterflow_auth_session.counterflow_user_id,
+                action_type=CounterFlowActions.INVENTORY_DELETED,
+                entity_type="product",
+                entity_id=product_id,
+                details=f"Product removed: '{product_name}' (soft-deleted, history preserved)",
+            )
+
+        if COUNTERFLOW_DEBUG:
+            print(f"[CounterFlow] Product soft-deleted: {product_name} (id={product_id})")
+
+        return product_name
 
     # ── Stock Operations ───────────────────────────────────────
 
@@ -204,6 +273,17 @@ class CounterFlowInventoryManager:
                 f"[CounterFlow] Restocked {quantity} units of "
                 f"'{counterflow_product.counterflow_name}'. "
                 f"New stock: {counterflow_product.counterflow_stock_qty}"
+            )
+
+        # Audit log
+        if counterflow_auth_session.counterflow_is_authenticated:
+            counterflow_log_action(
+                session=self.counterflow_session,
+                user_id=counterflow_auth_session.counterflow_user_id,
+                action_type=CounterFlowActions.STOCK_RESTOCKED,
+                entity_type="product",
+                entity_id=product_id,
+                details=f"Qty added: {quantity} | Reason: {reason} | New stock: {counterflow_product.counterflow_stock_qty}",
             )
 
         return counterflow_product

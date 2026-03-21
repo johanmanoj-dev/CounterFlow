@@ -77,7 +77,7 @@ class CounterFlowSplashScreen(QSplashScreen):
         start_x = (w - total_width) // 2
 
         counterflow_logo_x = start_x
-        counterflow_logo_y = (h // 2) - 45
+        counterflow_logo_y = (h // 2) - 55
 
         if os.path.exists(counterflow_logo_path):
             counterflow_logo = QPixmap(counterflow_logo_path).scaled(
@@ -113,10 +113,6 @@ class CounterFlowSplashScreen(QSplashScreen):
             counterflow_name_y,
             COUNTERFLOW_APP_NAME
         )
-
-        # ── Divider line ───────────────────────────────────────
-        painter.setPen(QPen(QColor("#e5e7eb"), 1))
-        painter.drawLine(40, h - 56, w - 40, h - 56)
 
         # ── "by CN-6" bottom center ────────────────────────────
         counterflow_by_font = QFont("Segoe UI", 15)

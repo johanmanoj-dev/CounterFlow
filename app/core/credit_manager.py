@@ -25,6 +25,8 @@ from app.db.models import CounterFlowInvoice, CounterFlowInvoiceItem
 from app.core.billing import CounterFlowBillingSession
 from app.core.inventory_manager import CounterFlowInventoryManager
 from app.core.customer_manager import CounterFlowCustomerManager
+from app.core.activity_logger import counterflow_log_action, CounterFlowActions
+from app.core.auth import counterflow_auth_session
 from app.config import (
     COUNTERFLOW_PAYMENT_CREDIT,
     COUNTERFLOW_PAYMENT_METHODS,
@@ -218,6 +220,21 @@ class CounterFlowBillingFinalizer:
                 self.counterflow_customers.counterflow_add_credit(
                     customer_id=counterflow_customer_id,
                     amount=billing_session.counterflow_total,
+                )
+
+            # ── Step 8b: Audit Log ─────────────────────────────
+            if counterflow_auth_session.counterflow_is_authenticated:
+                counterflow_log_action(
+                    session=self.counterflow_session,
+                    user_id=counterflow_auth_session.counterflow_user_id,
+                    action_type=CounterFlowActions.BILL_CREATED,
+                    entity_type="invoice",
+                    entity_id=counterflow_invoice.counterflow_invoice_id,
+                    details=(
+                        f"Total: ₹{billing_session.counterflow_total:,.2f} | "
+                        f"Method: {payment_method} | "
+                        f"Items: {len(billing_session.counterflow_items)}"
+                    ),
                 )
 
             # ── Step 9: Commit ─────────────────────────────────

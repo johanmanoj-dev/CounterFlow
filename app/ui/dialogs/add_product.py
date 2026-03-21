@@ -122,6 +122,7 @@ class CounterFlowAddProductDialog(QDialog):
         self._counterflow_price.setRange(0.01, 9_999_999.00)
         self._counterflow_price.setPrefix("₹ ")
         self._counterflow_price.setDecimals(2)
+        self._counterflow_price.setValue(1.00)
         self._counterflow_price.setMinimumHeight(t.COUNTERFLOW_INPUT_HEIGHT)
         counterflow_fields.addWidget(self._counterflow_price)
 

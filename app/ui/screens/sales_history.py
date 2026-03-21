@@ -95,7 +95,7 @@ class CounterFlowSalesHistoryScreen(QWidget):
             }}
         """)
         card_layout = QVBoxLayout(self._counterflow_list_card)
-        card_layout.setContentsMargins(0, 0, 0, 0)
+        card_layout.setContentsMargins(1, 1, 1, 1)
         card_layout.setSpacing(0)
 
         self._counterflow_invoice_table = QTableWidget()
@@ -103,7 +103,8 @@ class CounterFlowSalesHistoryScreen(QWidget):
         self._counterflow_invoice_table.setHorizontalHeaderLabels(
             ["Invoice #", "Customer", "Total", "Date"]
         )
-        self._counterflow_invoice_table.setShowGrid(False)
+        self._counterflow_invoice_table.setShowGrid(True)
+        self._counterflow_invoice_table.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         self._counterflow_invoice_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
         )
@@ -123,6 +124,23 @@ class CounterFlowSalesHistoryScreen(QWidget):
                 background: transparent;
             }
         """)
+        
+        # Force round header sections to match card
+        self._counterflow_invoice_table.horizontalHeader().setStyleSheet(f"""
+            QHeaderView {{
+                background: transparent;
+                border: none;
+                border-top-left-radius: 11px;
+                border-top-right-radius: 11px;
+            }}
+            QHeaderView::section:first {{
+                border-top-left-radius: 11px;
+            }}
+            QHeaderView::section:last {{
+                border-top-right-radius: 11px;
+            }}
+        """)
+        
         self._counterflow_invoice_table.currentCellChanged.connect(
             self._counterflow_on_invoice_selected
         )
@@ -166,7 +184,7 @@ class CounterFlowSalesHistoryScreen(QWidget):
             }}
         """)
         card_layout = QVBoxLayout(self._counterflow_detail_card)
-        card_layout.setContentsMargins(0, 0, 0, 0)
+        card_layout.setContentsMargins(1, 1, 1, 1)
         card_layout.setSpacing(0)
 
         self._counterflow_items_table = QTableWidget()
@@ -174,7 +192,8 @@ class CounterFlowSalesHistoryScreen(QWidget):
         self._counterflow_items_table.setHorizontalHeaderLabels(
             ["Product", "Price", "Qty", "Subtotal"]
         )
-        self._counterflow_items_table.setShowGrid(False)
+        self._counterflow_items_table.setShowGrid(True)
+        self._counterflow_items_table.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
         self._counterflow_items_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
         )
@@ -187,6 +206,22 @@ class CounterFlowSalesHistoryScreen(QWidget):
                 border: none;
                 background: transparent;
             }
+        """)
+        
+        # Force round header sections to match card
+        self._counterflow_items_table.horizontalHeader().setStyleSheet(f"""
+            QHeaderView {{
+                background: transparent;
+                border: none;
+                border-top-left-radius: 11px;
+                border-top-right-radius: 11px;
+            }}
+            QHeaderView::section:first {{
+                border-top-left-radius: 11px;
+            }}
+            QHeaderView::section:last {{
+                border-top-right-radius: 11px;
+            }}
         """)
         card_layout.addWidget(self._counterflow_items_table)
 
@@ -294,9 +329,9 @@ class CounterFlowSalesHistoryScreen(QWidget):
             bg, fg = thm["warning_light"], thm["warning_text"]
         self._counterflow_detail_payment_badge.setText(method)
         self._counterflow_detail_payment_badge.setStyleSheet(f"""
-            background: {bg}; color: {fg};
+            background: {bg}; color: {thm['text_primary']};
             border-radius: 10px; padding: 2px 14px;
-            font-size: 15px; font-weight: 600;
+            font-size: 15px; font-weight: bold;
         """)
         self._counterflow_detail_payment_badge.setVisible(True)
 
@@ -343,11 +378,11 @@ class CounterFlowSalesHistoryScreen(QWidget):
 
         badge.setStyleSheet(f"""
             background: {bg};
-            color: {fg};
+            color: {thm['text_primary']};
             border-radius: 10px;
             padding: 2px 10px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: bold;
         """)
         wrapper = QWidget()
         wl = QHBoxLayout(wrapper)
@@ -384,4 +419,5 @@ class CounterFlowSalesHistoryScreen(QWidget):
     def _cf_item(self, text: str) -> QTableWidgetItem:
         item = QTableWidgetItem(text)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         return item

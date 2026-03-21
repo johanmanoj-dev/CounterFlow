@@ -74,33 +74,30 @@ class CounterFlowStatCard(QWidget):
     ):
         counterflow_layout = QVBoxLayout(self)
         counterflow_layout.setContentsMargins(20, 16, 20, 16)
-        counterflow_layout.setSpacing(6)
+        counterflow_layout.setSpacing(4)
 
-        # ── Row 1: Title + Icon ────────────────────────────────
+        # ── Row 1: Title (+ Icon if provided) ──────────────────
         counterflow_top_row = QHBoxLayout()
         counterflow_top_row.setContentsMargins(0, 0, 0, 0)
 
         self._counterflow_title_label = QLabel(title)
         self._counterflow_title_label.setObjectName("counterflowCardTitle")
 
-        self._counterflow_icon_label = QLabel(icon)
-        self._counterflow_icon_label.setObjectName("counterflowCardIcon")
-        self._counterflow_icon_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-
         counterflow_top_row.addWidget(self._counterflow_title_label)
         counterflow_top_row.addStretch()
-        counterflow_top_row.addWidget(self._counterflow_icon_label)
-        counterflow_layout.addLayout(counterflow_top_row)
 
-        counterflow_layout.addSpacing(4)
+        if icon:
+            self._counterflow_icon_label = QLabel(icon)
+            self._counterflow_icon_label.setObjectName("counterflowCardIcon")
+            self._counterflow_icon_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+            counterflow_top_row.addWidget(self._counterflow_icon_label)
+
+        counterflow_layout.addLayout(counterflow_top_row)
+        counterflow_layout.addSpacing(8)
 
         # ── Row 2: Value ───────────────────────────────────────
         self._counterflow_value_label = QLabel(value)
         self._counterflow_value_label.setObjectName("counterflowCardValue")
-
-        counterflow_value_font = QFont("Segoe UI", 25)
-        counterflow_value_font.setWeight(QFont.Weight.Bold)
-        self._counterflow_value_label.setFont(counterflow_value_font)
 
         counterflow_layout.addWidget(self._counterflow_value_label)
 
@@ -156,25 +153,28 @@ class CounterFlowStatCard(QWidget):
                 border: none;
             }}
             QLabel#counterflowCardTitle {{
-                color: {t['text_secondary']};
-                font-size: 16px;
-                font-weight: 400;
+                color: {t['text_primary']};
+                font-size: 14px;
+                font-weight: 800;
+                letter-spacing: -0.5px;
             }}
             QLabel#counterflowCardIcon {{
                 color: {t['text_secondary']};
-                font-size: 19px;
+                font-size: 5px;
             }}
             QLabel#counterflowCardValue {{
                 color: {t['text_primary']};
+                font-size: 20px;
+                font-weight: 600;
             }}
             QLabel#counterflowCardChangePos {{
                 color: {t['success']};
-                font-size: 15px;
+                font-size: 19px;
                 font-weight: 500;
             }}
             QLabel#counterflowCardChangeNeg {{
                 color: {t['danger']};
-                font-size: 15px;
+                font-size: 19px;
                 font-weight: 500;
             }}
         """)

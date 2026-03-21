@@ -19,7 +19,7 @@ cls
 
 echo.
 echo  ============================================
-echo   CounterFlow v1.0.0 — EXE Builder
+echo   CounterFlow v1.0.0 - EXE Builder
 echo   by CN-6
 echo  ============================================
 echo.

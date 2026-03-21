@@ -12,12 +12,12 @@ COUNTERFLOW_LIGHT = {
     "bg_app":           "#f5f7fa",
     "bg_surface":       "#ffffff",
     "bg_sidebar":       "#ffffff",
-    "sidebar_border":   "#e8e8e8",
+    "sidebar_border":   "#d9d9d9",
     "text_primary":     "#111827",
     "text_secondary":   "#6b7280",
     "text_sidebar":     "#374151",
     "text_sidebar_active": "#111827",
-    "border":           "#e5e7eb",
+    "border":           "#d5d7db",
     "hover":            "#f3f4f6",
     "active_bg":        "#f3f4f6",
     "active_indicator": "#111827",
@@ -30,7 +30,7 @@ COUNTERFLOW_LIGHT = {
     "table_hover":      "#f3f4f6",
     "table_border":     "#e5e7eb",
     "card_bg":          "#ffffff",
-    "card_border":      "#e5e7eb",
+    "card_border":      "#d5d7db",
     "scrollbar":        "#e5e7eb",
     "scrollbar_handle": "#d1d5db",
     "total_card_bg":    "#111827",
@@ -39,32 +39,32 @@ COUNTERFLOW_LIGHT = {
 
 # ── CounterFlow Dark Mode Colors ──────────────────────────────
 COUNTERFLOW_DARK = {
-    "bg_app":           "#0f172a",
-    "bg_surface":       "#1e293b",
-    "bg_sidebar":       "#1e293b",
-    "sidebar_border":   "#334155",
-    "text_primary":     "#f1f5f9",
-    "text_secondary":   "#94a3b8",
-    "text_sidebar":     "#cbd5e1",
-    "text_sidebar_active": "#f1f5f9",
-    "border":           "#334155",
-    "hover":            "#334155",
-    "active_bg":        "#334155",
-    "active_indicator": "#f1f5f9",
-    "input_bg":         "#1e293b",
-    "input_border":     "#475569",
-    "input_focus":      "#94a3b8",
-    "table_header_bg":  "#0f172a",
-    "table_header_text":"#94a3b8",
-    "table_row_alt":    "#1a2744",
-    "table_hover":      "#334155",
-    "table_border":     "#334155",
-    "card_bg":          "#1e293b",
-    "card_border":      "#334155",
-    "scrollbar":        "#334155",
-    "scrollbar_handle": "#475569",
-    "total_card_bg":    "#f1f5f9",
-    "total_card_text":  "#111827",
+    "bg_app":           "#000000",
+    "bg_surface":       "#121212",
+    "bg_sidebar":       "#121212",
+    "sidebar_border":   "#2b2b2b",
+    "text_primary":     "#f5f5f5",
+    "text_secondary":   "#a3a3a3",
+    "text_sidebar":     "#d4d4d4",
+    "text_sidebar_active": "#ffffff",
+    "border":           "#3a3a3a",
+    "hover":            "#2b2b2b",
+    "active_bg":        "#2b2b2b",
+    "active_indicator": "#ffffff",
+    "input_bg":         "#121212",
+    "input_border":     "#3a3a3a",
+    "input_focus":      "#a3a3a3",
+    "table_header_bg":  "#000000",
+    "table_header_text":"#a3a3a3",
+    "table_row_alt":    "#1c1c1c",
+    "table_hover":      "#2b2b2b",
+    "table_border":     "#2b2b2b",
+    "card_bg":          "#121212",
+    "card_border":      "#3a3a3a",
+    "scrollbar":        "#2b2b2b",
+    "scrollbar_handle": "#4d4d4d",
+    "total_card_bg":    "#e5e5e5",
+    "total_card_text":  "#000000",
     # Dark-mode-aware accent overrides (override COUNTERFLOW_COLORS)
     "success_light":    "#064e3b",
     "danger_light":     "#7f1d1d",
@@ -111,18 +111,18 @@ COUNTERFLOW_COLORS = {
 }
 
 # ── CounterFlow Dimensions ─────────────────────────────────────
-COUNTERFLOW_SIDEBAR_WIDTH       = 260
+COUNTERFLOW_SIDEBAR_WIDTH       = 220
 COUNTERFLOW_CONTENT_PADDING     = 32
 COUNTERFLOW_CARD_RADIUS         = 12
-COUNTERFLOW_INPUT_HEIGHT        = 46
-COUNTERFLOW_BTN_HEIGHT          = 46
-COUNTERFLOW_TABLE_ROW_HEIGHT    = 60
-COUNTERFLOW_TABLE_HEADER_HEIGHT = 50
-COUNTERFLOW_NAV_ITEM_HEIGHT     = 50
+COUNTERFLOW_INPUT_HEIGHT        = 42
+COUNTERFLOW_BTN_HEIGHT          = 42
+COUNTERFLOW_TABLE_ROW_HEIGHT    = 48
+COUNTERFLOW_TABLE_HEADER_HEIGHT = 44
+COUNTERFLOW_NAV_ITEM_HEIGHT     = 44
 COUNTERFLOW_LOGO_SIZE           = 32
 
 # ── Active theme tracker ───────────────────────────────────────
-_counterflow_dark_mode = False
+_counterflow_dark_mode = True
 
 
 def counterflow_is_dark() -> bool:
@@ -140,9 +140,18 @@ def counterflow_theme() -> dict:
     Merge order: shared accents first, then mode-specific palette on top.
     This lets COUNTERFLOW_DARK override accent keys like success_light,
     stock_green_bg, etc. with dark-friendly variants.
+
+    Convenience aliases injected for auth/log UI files:
+    accent, accent_hover, bg_main, bg_card.
     """
-    base = COUNTERFLOW_DARK if _counterflow_dark_mode else COUNTERFLOW_LIGHT
-    return {**COUNTERFLOW_COLORS, **base}
+    base   = COUNTERFLOW_DARK if _counterflow_dark_mode else COUNTERFLOW_LIGHT
+    merged = {**COUNTERFLOW_COLORS, **base}
+    # ── CounterFlow auth/log screen aliases ───────────────────
+    merged["accent"]       = merged["primary"]
+    merged["accent_hover"] = merged["primary_hover"]
+    merged["bg_main"]      = merged["bg_app"]
+    merged["bg_card"]      = merged["bg_surface"]
+    return merged
 
 
 def counterflow_build_stylesheet() -> str:
@@ -158,7 +167,7 @@ def counterflow_build_stylesheet() -> str:
         background-color: {t['bg_app']};
         color: {t['text_primary']};
         font-family: 'Segoe UI', 'Inter', sans-serif;
-        font-size: 16px;
+        font-size: 14px;
         border: none;
         outline: none;
     }}
@@ -185,7 +194,7 @@ def counterflow_build_stylesheet() -> str:
         border-radius: 8px;
         padding: 6px 12px;
         color: {t['text_primary']};
-        font-size: 16px;
+        font-size: 14px;
         min-height: {COUNTERFLOW_INPUT_HEIGHT}px;
     }}
     QLineEdit:focus, QDateEdit:focus, QComboBox:focus,
@@ -221,7 +230,7 @@ def counterflow_build_stylesheet() -> str:
         border: none;
         border-radius: 8px;
         padding: 8px 18px;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 600;
         min-height: {COUNTERFLOW_BTN_HEIGHT}px;
     }}
@@ -274,9 +283,8 @@ def counterflow_build_stylesheet() -> str:
 
     /* ── CounterFlow Table ── */
     QTableWidget {{
-        background: {t['card_bg']};
-        border: 1px solid {t['card_border']};
-        border-radius: 12px;
+        background: transparent;
+        border: none;
         gridline-color: {t['table_border']};
         selection-background-color: {t['hover']};
         selection-color: {t['text_primary']};
@@ -297,14 +305,18 @@ def counterflow_build_stylesheet() -> str:
     QHeaderView::section {{
         background: {t['table_header_bg']};
         color: {t['table_header_text']};
-        font-size: 15px;
-        font-weight: 600;
-        padding: 0px 8px;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 0px 12px;
         height: {COUNTERFLOW_TABLE_HEADER_HEIGHT}px;
         border: none;
-        border-bottom: 1px solid {t['table_border']};
+        border-right: 1px solid {t['table_border']};
+        border-bottom: 2px solid {t['table_border']};
         text-transform: uppercase;
         letter-spacing: 0.5px;
+    }}
+    QHeaderView::section:last {{
+        border-right: none;
     }}
     QHeaderView::section:first {{
         border-top-left-radius: 12px;

@@ -23,7 +23,8 @@ from app.config import (
 )
 
 # ── CounterFlow Navigation Items ──────────────────────────────
-COUNTERFLOW_NAV_ITEMS = [
+# Base items visible to ALL roles
+COUNTERFLOW_NAV_ITEMS_BASE = [
     ("counterflow_dashboard",        "dashboard",  "Dashboard"),
     ("counterflow_new_bill",         "new_bill",   "New Bill"),
     ("counterflow_inventory",        "inventory",  "Inventory"),
@@ -33,15 +34,23 @@ COUNTERFLOW_NAV_ITEMS = [
     ("counterflow_database_records", "database",   "Database & Records"),
 ]
 
+# Admin-only items appended below the base list
+COUNTERFLOW_NAV_ITEMS_ADMIN = [
+    ("counterflow_staff_management", "staff",  "Staff Management"),
+    ("counterflow_activity_logs",    "logs",   "Activity Logs"),
+]
+
 # ── CounterFlow Nav Icons (unicode fallback) ──────────────────
 COUNTERFLOW_NAV_ICONS = {
     "dashboard":  "⊞",
-    "new_bill":   "🛒",
-    "inventory":  "⬡",
-    "customers":  "👤",
-    "sales":      "↺",
-    "financials": "＄",
-    "database":   "⊚",
+    "new_bill":   "☰",
+    "inventory":  "◎",
+    "customers":  "⊕",
+    "sales":      "↻",
+    "financials": "$",
+    "database":   "⊡",
+    "staff":      "👤",
+    "logs":       "📋",
 }
 
 
@@ -59,7 +68,7 @@ class CounterFlowNavButton(QPushButton):
         self.counterflow_label    = label
         self.counterflow_active   = False
 
-        self.setText(f"  {COUNTERFLOW_NAV_ICONS.get(icon_key, '•')}   {label}")
+        self.setText(f"  {label}")
         self.setCheckable(True)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setFixedHeight(counterflow_theme_module.COUNTERFLOW_NAV_ITEM_HEIGHT)
@@ -75,10 +84,10 @@ class CounterFlowNavButton(QPushButton):
                 color: {t['text_sidebar']};
                 border: none;
                 border-radius: 8px;
-                padding: 0px 12px;
+                padding: 0px 14px;
                 text-align: left;
-                font-size: 16px;
-                font-weight: 500;
+                font-size: 15px;
+                font-weight: 700;
             }}
             QPushButton:hover {{
                 background: {t['hover']};
@@ -113,13 +122,21 @@ class CounterFlowSidebar(QWidget):
 
     counterflow_page_changed      = pyqtSignal(str)
     counterflow_dark_mode_toggled = pyqtSignal(bool)
+    counterflow_logout_requested  = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, is_admin: bool = False, parent=None):
         super().__init__(parent)
+        self._counterflow_is_admin    = is_admin
         self._counterflow_buttons: dict[str, CounterFlowNavButton] = {}
         self._counterflow_active_key: str = None
         self._counterflow_dividers: list = []
 
+        # Build nav list based on role
+        self._counterflow_nav_items = list(COUNTERFLOW_NAV_ITEMS_BASE)
+        if is_admin:
+            self._counterflow_nav_items += COUNTERFLOW_NAV_ITEMS_ADMIN
+
+        self.setObjectName("counterflowSidebar")
         self.setFixedWidth(counterflow_theme_module.COUNTERFLOW_SIDEBAR_WIDTH)
         self._counterflow_build()
         self._counterflow_apply_sidebar_style()
@@ -134,15 +151,25 @@ class CounterFlowSidebar(QWidget):
         # ── Header: Logo + Name ────────────────────────────────
         counterflow_header = self._counterflow_build_header()
         counterflow_root.addWidget(counterflow_header)
-
-        # ── Divider ────────────────────────────────────────────
-        counterflow_div1 = self._counterflow_divider()
-        self._counterflow_dividers.append(counterflow_div1)
-        counterflow_root.addWidget(counterflow_div1)
         counterflow_root.addSpacing(8)
 
         # ── Navigation Items ───────────────────────────────────
-        for counterflow_key, counterflow_icon, counterflow_label in COUNTERFLOW_NAV_ITEMS:
+        for counterflow_key, counterflow_icon, counterflow_label in self._counterflow_nav_items:
+            # Insert visual section divider before admin-only items
+            if counterflow_key == "counterflow_staff_management":
+                counterflow_root.addSpacing(6)
+                admin_div = self._counterflow_divider()
+                self._counterflow_dividers.append(admin_div)
+                counterflow_root.addWidget(admin_div)
+                admin_section_lbl = QLabel("  ADMIN")
+                admin_section_lbl.setObjectName("cfAdminSectionLabel")
+                admin_section_lbl.setStyleSheet(
+                    "color: #6b7280; font-size: 10px; font-weight: 700; "
+                    "letter-spacing: 1.2px; background: transparent; border: none; "
+                    "padding-left: 14px; padding-top: 6px; padding-bottom: 2px;"
+                )
+                counterflow_root.addWidget(admin_section_lbl)
+
             counterflow_btn = CounterFlowNavButton(
                 icon_key=counterflow_icon,
                 label=counterflow_label,
@@ -165,6 +192,11 @@ class CounterFlowSidebar(QWidget):
         counterflow_root.addWidget(counterflow_div2)
         counterflow_root.addSpacing(8)
 
+        # ── Logout Button ──────────────────────────────────────
+        counterflow_logout_btn = self._counterflow_build_logout_btn()
+        counterflow_root.addWidget(counterflow_logout_btn)
+        counterflow_root.addSpacing(4)
+
         # ── Dark Mode Toggle ───────────────────────────────────
         counterflow_dark_btn = self._counterflow_build_dark_toggle()
         counterflow_root.addWidget(counterflow_dark_btn)
@@ -181,10 +213,10 @@ class CounterFlowSidebar(QWidget):
         Logo and name are on the SAME horizontal line.
         """
         counterflow_header = QWidget()
-        counterflow_header.setFixedHeight(78)
-        counterflow_header.setStyleSheet("background: transparent;")
+        counterflow_header.setFixedHeight(68)
+        counterflow_header.setStyleSheet("background: transparent; border: none;")
         counterflow_layout = QHBoxLayout(counterflow_header)
-        counterflow_layout.setContentsMargins(4, 0, 4, 0)
+        counterflow_layout.setContentsMargins(4, 14, 4, 0)
         counterflow_layout.setSpacing(10)
 
         # Logo
@@ -195,23 +227,15 @@ class CounterFlowSidebar(QWidget):
         )
         self._counterflow_load_logo()
 
-        # Name + subtitle stacked vertically
-        counterflow_name_col = QVBoxLayout()
-        counterflow_name_col.setSpacing(1)
-        counterflow_name_col.setContentsMargins(0, 0, 0, 0)
-
-        self._counterflow_name_label = QLabel(COUNTERFLOW_APP_NAME)
-        counterflow_name_font = QFont("Segoe UI", 16)
+        # Name only
+        self._counterflow_name_label = QLabel("CounterFlow POS")
+        counterflow_name_font = QFont("Segoe UI", 14)
         counterflow_name_font.setWeight(QFont.Weight.Bold)
         self._counterflow_name_label.setFont(counterflow_name_font)
-
-        counterflow_name_col.addWidget(self._counterflow_name_label)
-
-        counterflow_name_widget = QWidget()
-        counterflow_name_widget.setLayout(counterflow_name_col)
+        self._counterflow_name_label.setStyleSheet("background: transparent; border: none;")
 
         counterflow_layout.addWidget(self._counterflow_logo_label)
-        counterflow_layout.addWidget(counterflow_name_widget)
+        counterflow_layout.addWidget(self._counterflow_name_label)
         counterflow_layout.addStretch()
 
         return counterflow_header
@@ -241,6 +265,21 @@ class CounterFlowSidebar(QWidget):
                 font-weight: bold;
                 font-size: 14px;
             """)
+
+    def _counterflow_build_logout_btn(self) -> QPushButton:
+        """CounterFlow — Logout button at bottom of sidebar."""
+        self._counterflow_logout_btn = QPushButton("  ⏻   Logout")
+        self._counterflow_logout_btn.setFixedHeight(
+            counterflow_theme_module.COUNTERFLOW_NAV_ITEM_HEIGHT
+        )
+        self._counterflow_logout_btn.setCursor(
+            QCursor(Qt.CursorShape.PointingHandCursor)
+        )
+        self._counterflow_logout_btn.clicked.connect(
+            lambda: self.counterflow_logout_requested.emit()
+        )
+        self._counterflow_apply_logout_btn_style()
+        return self._counterflow_logout_btn
 
     def _counterflow_build_dark_toggle(self) -> QPushButton:
         """CounterFlow — Dark mode toggle button at bottom of sidebar."""
@@ -299,10 +338,10 @@ class CounterFlowSidebar(QWidget):
     def counterflow_refresh_theme(self):
         """CounterFlow — Reapply all styles after theme change."""
         self._counterflow_apply_sidebar_style()
+        self._counterflow_apply_logout_btn_style()
         self._counterflow_apply_dark_btn_style()
         self._counterflow_apply_credit_style()
         self._counterflow_load_logo()
-        # Refresh dividers
         t = counterflow_theme_module.counterflow_theme()
         for div in self._counterflow_dividers:
             div.setStyleSheet(f"background: {t['border']}; border: none;")
@@ -314,14 +353,37 @@ class CounterFlowSidebar(QWidget):
     def _counterflow_apply_sidebar_style(self):
         t = counterflow_theme_module.counterflow_theme()
         self.setStyleSheet(f"""
-            QWidget {{
+            QWidget#counterflowSidebar {{
                 background: {t['bg_sidebar']};
                 border-right: 1px solid {t['sidebar_border']};
+            }}
+            QWidget#counterflowSidebar > QWidget {{
+                background: transparent;
+                border: none;
             }}
             QLabel {{
                 background: transparent;
                 border: none;
                 color: {t['text_primary']};
+            }}
+        """)
+
+    def _counterflow_apply_logout_btn_style(self):
+        t = counterflow_theme_module.counterflow_theme()
+        self._counterflow_logout_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                color: {t['danger']};
+                border: none;
+                border-radius: 8px;
+                padding: 0px 14px;
+                text-align: left;
+                font-size: 14px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background: {t['danger_light']};
+                color: {t['danger']};
             }}
         """)
 
@@ -336,9 +398,9 @@ class CounterFlowSidebar(QWidget):
                 color: {t['text_secondary']};
                 border: none;
                 border-radius: 8px;
-                padding: 0px 12px;
+                padding: 0px 14px;
                 text-align: left;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 400;
             }}
             QPushButton:hover {{
@@ -351,7 +413,7 @@ class CounterFlowSidebar(QWidget):
         t = counterflow_theme_module.counterflow_theme()
         self._counterflow_credit_label.setStyleSheet(f"""
             color: {t['text_secondary']};
-            font-size: 13px;
+            font-size: 11px;
             font-weight: bold;
             letter-spacing: 1px;
             background: transparent;

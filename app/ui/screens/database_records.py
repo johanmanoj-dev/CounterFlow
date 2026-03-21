@@ -8,15 +8,15 @@ Matches approved CounterFlow design exactly.
 """
 
 import csv
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTableWidget, QTableWidgetItem,
     QHeaderView, QComboBox, QDateEdit, QFileDialog,
-    QMessageBox
+    QMessageBox, QFrame, QCompleter, QApplication
 )
 from PyQt6.QtCore import Qt, QDate
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtGui import QFont, QColor, QIcon
 
 from app.core.report_generator import CounterFlowReportGenerator
 from app.core.customer_manager import CounterFlowCustomerManager
@@ -54,7 +54,7 @@ class CounterFlowDatabaseScreen(QWidget):
         counterflow_filter_row1.setSpacing(12)
 
         # From date
-        counterflow_cal_icon = QLabel("📅")
+    
         self._counterflow_from_date = QDateEdit()
         self._counterflow_from_date.setCalendarPopup(True)
         self._counterflow_from_date.setDate(
@@ -81,9 +81,19 @@ class CounterFlowDatabaseScreen(QWidget):
         )
         self._counterflow_method_combo.setMinimumWidth(140)
 
-        # Customer dropdown
+        # Customer filter — searchable combo box
         self._counterflow_customer_combo = QComboBox()
+        self._counterflow_customer_combo.setEditable(True)
+        self._counterflow_customer_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self._counterflow_customer_combo.setMinimumWidth(160)
+        
+        # Configure search behavior
+        self._counterflow_customer_combo.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        self._counterflow_customer_combo.completer().setFilterMode(Qt.MatchFlag.MatchContains)
+        
+        if self._counterflow_customer_combo.lineEdit():
+            self._counterflow_customer_combo.lineEdit().setPlaceholderText("Search customer...")
+        
         self._counterflow_customer_combo.addItem("All Customers")
         counterflow_customers = self.counterflow_cust_mgr.counterflow_get_all_customers()
         for c in counterflow_customers:
@@ -92,7 +102,6 @@ class CounterFlowDatabaseScreen(QWidget):
                 c.counterflow_customer_id
             )
 
-        counterflow_filter_row1.addWidget(counterflow_cal_icon)
         counterflow_filter_row1.addWidget(self._counterflow_from_date)
         counterflow_filter_row1.addWidget(self._counterflow_to_lbl)
         counterflow_filter_row1.addWidget(self._counterflow_to_date)
@@ -130,11 +139,12 @@ class CounterFlowDatabaseScreen(QWidget):
         counterflow_apply_btn.clicked.connect(self._counterflow_apply_filters)
         counterflow_filter_row2.addWidget(counterflow_apply_btn)
 
-        counterflow_export_btn = QPushButton("⬇  Export CSV")
-        counterflow_export_btn.setObjectName("counterflowOutlineBtn")
-        counterflow_export_btn.setMinimumHeight(42)
-        counterflow_export_btn.clicked.connect(self._counterflow_export_csv)
-        counterflow_filter_row2.addWidget(counterflow_export_btn)
+        self._counterflow_csv_btn = QPushButton("Export CSV")
+        self._counterflow_csv_btn.setObjectName("counterflowOutlineBtn")
+        self._counterflow_csv_btn.setMinimumHeight(42)
+        self._counterflow_csv_btn.clicked.connect(self._counterflow_export_csv)
+        self._counterflow_csv_btn.setIcon(QIcon.fromTheme("document-save"))
+        counterflow_filter_row2.addWidget(self._counterflow_csv_btn)
 
         counterflow_layout.addLayout(counterflow_filter_row2)
 
@@ -159,12 +169,25 @@ class CounterFlowDatabaseScreen(QWidget):
         counterflow_layout.addLayout(counterflow_summary_row)
 
         # ── Results table ──────────────────────────────────────
+        # ── Results table card ─────────────────────────────────
+        self._counterflow_results_card = QFrame()
+        self._counterflow_results_card.setStyleSheet(f"""
+            QFrame {{
+                background: {thm['bg_surface']};
+                border: 1px solid {thm['card_border']};
+                border-radius: 12px;
+            }}
+        """)
+        results_card_layout = QVBoxLayout(self._counterflow_results_card)
+        results_card_layout.setContentsMargins(1, 1, 1, 1)
+        results_card_layout.setSpacing(0)
+
         self._counterflow_results_table = QTableWidget()
         self._counterflow_results_table.setColumnCount(7)
         self._counterflow_results_table.setHorizontalHeaderLabels(
             ["", "Invoice #", "Date", "Customer", "Total", "Method", "Items"]
         )
-        self._counterflow_results_table.setShowGrid(False)
+        self._counterflow_results_table.setShowGrid(True)
         self._counterflow_results_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
         )
@@ -175,27 +198,48 @@ class CounterFlowDatabaseScreen(QWidget):
         self._counterflow_results_table.horizontalHeader().setSectionResizeMode(
             3, QHeaderView.ResizeMode.Stretch
         )
-        self._counterflow_results_table.setColumnWidth(0, 30)
+        self._counterflow_results_table.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._counterflow_results_table.setColumnWidth(0, 35)
         self._counterflow_results_table.setColumnWidth(1, 135)
         self._counterflow_results_table.setColumnWidth(2, 155)
         self._counterflow_results_table.setColumnWidth(4, 125)
         self._counterflow_results_table.setColumnWidth(5, 125)
         self._counterflow_results_table.setColumnWidth(6, 95)
+        
+        # Consistent header rounding
+        self._counterflow_results_table.horizontalHeader().setStyleSheet(f"""
+            QHeaderView {{
+                background: transparent;
+                border: none;
+                border-top-left-radius: 11px;
+                border-top-right-radius: 11px;
+            }}
+            QHeaderView::section:first {{
+                border-top-left-radius: 11px;
+            }}
+            QHeaderView::section:last {{
+                border-top-right-radius: 11px;
+            }}
+        """)
+        self._counterflow_results_table.setStyleSheet("border: none; background: transparent;")
+        
         self._counterflow_results_table.cellClicked.connect(
             self._counterflow_on_row_clicked
         )
-        counterflow_layout.addWidget(self._counterflow_results_table)
+        results_card_layout.addWidget(self._counterflow_results_table)
+        counterflow_layout.addWidget(self._counterflow_results_card)
 
     def _counterflow_summary_pill(self, label, value, fg, bg) -> QLabel:
         thm = t.counterflow_theme()
         pill = QLabel(f"{label}: {value}")
         pill.setStyleSheet(f"""
             background: {thm['bg_surface']};
-            color: {thm['text_secondary']};
+            color: {thm['text_primary']};
             border: 1px solid {thm['border']};
             border-radius: 8px;
             padding: 6px 14px;
             font-size: 16px;
+            font-weight: 600;
         """)
         return pill
 
@@ -214,11 +258,12 @@ class CounterFlowDatabaseScreen(QWidget):
         # Summary pills
         pill_style = f"""
             background: {thm['bg_surface']};
-            color: {thm['text_secondary']};
+            color: {thm['text_primary']};
             border: 1px solid {thm['border']};
             border-radius: 8px;
             padding: 6px 14px;
             font-size: 16px;
+            font-weight: 600;
         """
         self._counterflow_cash_summary.setStyleSheet(pill_style)
         self._counterflow_upi_summary.setStyleSheet(pill_style)
@@ -281,6 +326,11 @@ class CounterFlowDatabaseScreen(QWidget):
         self._counterflow_customer_combo.setCurrentIndex(
             max(0, counterflow_restore_idx)
         )
+        
+        # Ensure search settings are reapplied if needed (though usually persistent)
+        self._counterflow_customer_combo.completer().setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        self._counterflow_customer_combo.completer().setFilterMode(Qt.MatchFlag.MatchContains)
+        
         self._counterflow_customer_combo.blockSignals(False)
 
     def _counterflow_apply_filters(self):
@@ -425,8 +475,8 @@ class CounterFlowDatabaseScreen(QWidget):
             counterflow_detail_cell.flags() & ~Qt.ItemFlag.ItemIsEditable
         )
         thm = t.counterflow_theme()
-        counterflow_detail_cell.setBackground(QColor(thm["table_row_alt"]))
-        counterflow_detail_cell.setForeground(QColor(thm["text_secondary"]))
+        counterflow_detail_cell.setBackground(QColor(thm["bg_surface"]))
+        counterflow_detail_cell.setForeground(QColor(thm["text_primary"]))
         self._counterflow_results_table.setItem(
             counterflow_detail_row, 1, counterflow_detail_cell
         )
@@ -438,44 +488,67 @@ class CounterFlowDatabaseScreen(QWidget):
         self._counterflow_expanded_row = counterflow_detail_row
 
     def _counterflow_export_csv(self):
-        """CounterFlow — Export filtered results to CSV file."""
+        """
+        CounterFlow — Export filtered results to CSV file.
+        Uses UTF-8-SIG for Excel compatibility.
+        """
         if not self._counterflow_current_invoices:
             QMessageBox.information(
                 self, "CounterFlow",
-                "No records to export."
+                "No records to export. Please apply filters first."
             )
             return
 
+        # Prepare default filename with today's date
+        counterflow_default_name = f"counterflow_export_{datetime.now().strftime('%Y%m%d')}.csv"
+        
         counterflow_path, _ = QFileDialog.getSaveFileName(
-            self, "CounterFlow — Export CSV",
-            "counterflow_records.csv",
+            self, "CounterFlow — Export CSV (Excel Compatible)",
+            counterflow_default_name,
             "CSV Files (*.csv)"
         )
         if not counterflow_path:
             return
 
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
-            with open(counterflow_path, "w", newline="", encoding="utf-8") as f:
-                counterflow_writer = csv.writer(f)
+            with open(counterflow_path, "w", newline="", encoding="utf-8-sig") as f:
+                # Add sep=, for Excel to immediately recognize the delimiter
+                f.write("sep=,\n")
+                
+                counterflow_writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+                
+                # Header row
                 counterflow_writer.writerow([
-                    "Invoice #", "Date", "Customer",
-                    "Total", "Payment Method", "Items"
+                    "Invoice #", "Date", "Customer", "Payment Method",
+                    "Product", "Quantity", "Unit Price", "Line Total",
+                    "Invoice Grand Total"
                 ])
+                
+                # Data rows (itemized)
                 for inv in self._counterflow_current_invoices:
-                    counterflow_writer.writerow([
-                        inv.counterflow_invoice_number,
-                        inv.counterflow_created_at.strftime("%Y-%m-%d %H:%M"),
-                        inv.counterflow_customer.counterflow_name if inv.counterflow_customer else "Walk-in",
-                        inv.counterflow_total_amount,
-                        inv.counterflow_payment_method,
-                        len(inv.counterflow_items),
-                    ])
+                    customer_name = inv.counterflow_customer.counterflow_name if inv.counterflow_customer else "Walk-in"
+                    for item in inv.counterflow_items:
+                        counterflow_writer.writerow([
+                            inv.counterflow_invoice_number,
+                            inv.counterflow_created_at.strftime("%Y-%m-%d %H:%M"),
+                            customer_name,
+                            inv.counterflow_payment_method,
+                            item.counterflow_product.counterflow_name,
+                            item.counterflow_quantity,
+                            f"{item.counterflow_unit_price:.2f}",
+                            f"{item.counterflow_line_total:.2f}",
+                            f"{inv.counterflow_total_amount:.2f}",
+                        ])
+            
+            QApplication.restoreOverrideCursor()
             QMessageBox.information(
                 self, "CounterFlow — Export Complete",
-                f"Exported {len(self._counterflow_current_invoices)} records."
+                f"Successfully exported {len(self._counterflow_current_invoices)} records to CSV."
             )
         except Exception as e:
-            QMessageBox.critical(self, "CounterFlow — Export Failed", str(e))
+            QApplication.restoreOverrideCursor()
+            QMessageBox.critical(self, "CounterFlow — Export Failed", f"An error occurred: {str(e)}")
 
     def _counterflow_payment_badge(self, method: str) -> QWidget:
         thm = t.counterflow_theme()
@@ -489,11 +562,11 @@ class CounterFlowDatabaseScreen(QWidget):
             bg, fg = thm["warning_light"], thm["warning_text"]
         badge.setStyleSheet(f"""
             background: {bg};
-            color: {fg};
+            color: {thm['text_primary']};
             border-radius: 10px;
             padding: 2px 10px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: bold;
         """)
         wrapper = QWidget()
         wl = QHBoxLayout(wrapper)
@@ -504,4 +577,5 @@ class CounterFlowDatabaseScreen(QWidget):
     def _cf_item(self, text: str) -> QTableWidgetItem:
         item = QTableWidgetItem(text)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         return item

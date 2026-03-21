@@ -113,7 +113,7 @@ class CounterFlowPOSScreen(QWidget):
         self._counterflow_bill_table.setHorizontalHeaderLabels(
             ["#", "Product", "Price", "Qty", "Total", ""]
         )
-        self._counterflow_bill_table.setShowGrid(False)
+        self._counterflow_bill_table.setShowGrid(True)
         self._counterflow_bill_table.setAlternatingRowColors(False)
         self._counterflow_bill_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
@@ -126,7 +126,7 @@ class CounterFlowPOSScreen(QWidget):
             1, QHeaderView.ResizeMode.Stretch
         )
         self._counterflow_bill_table.setColumnWidth(0, 40)
-        self._counterflow_bill_table.setColumnWidth(5, 40)
+        self._counterflow_bill_table.setColumnWidth(5, 60)
         counterflow_layout.addWidget(self._counterflow_bill_table)
 
         # Item count
@@ -219,6 +219,7 @@ class CounterFlowPOSScreen(QWidget):
 
         self._counterflow_mobile_input = QLineEdit()
         self._counterflow_mobile_input.setPlaceholderText("Customer mobile number")
+        self._counterflow_mobile_input.setFixedHeight(46)
         # 15 chars to accommodate +91 prefix (e.g. +919876543210 = 13 chars)
         self._counterflow_mobile_input.setMaxLength(15)
         # Use returnPressed only — NOT editingFinished, which fires when any
@@ -694,47 +695,43 @@ class CounterFlowPOSScreen(QWidget):
             )
             self._counterflow_bill_table.setItem(
                 row, 1,
-                self._cf_item(item.counterflow_product.counterflow_name)
+                self._cf_item(item.counterflow_product.counterflow_name, Qt.AlignmentFlag.AlignCenter)
             )
             self._counterflow_bill_table.setItem(
                 row, 2,
-                self._cf_item(f"₹{item.counterflow_product.counterflow_price:,.0f}")
+                self._cf_item(f"₹{item.counterflow_product.counterflow_price:,.0f}", Qt.AlignmentFlag.AlignCenter)
             )
             self._counterflow_bill_table.setItem(
                 row, 3,
-                self._cf_item(str(item.counterflow_quantity))
+                self._cf_item(str(item.counterflow_quantity), Qt.AlignmentFlag.AlignCenter)
             )
             self._counterflow_bill_table.setItem(
                 row, 4,
-                self._cf_item(f"₹{item.counterflow_line_total:,.0f}")
+                self._cf_item(f"₹{item.counterflow_line_total:,.0f}", Qt.AlignmentFlag.AlignCenter)
             )
 
-            # Remove button
+            # Remove button — fills the entire cell so it is always
+            # visible and clickable regardless of column / row size.
             counterflow_remove_btn = QPushButton("×")
-            counterflow_remove_btn.setFixedSize(28, 28)
             counterflow_remove_btn.setStyleSheet(f"""
                 QPushButton {{
                     background: transparent;
-                    color: {thm['text_secondary']};
+                    color: {thm['danger']};
                     border: none;
-                    font-size: 19px;
+                    font-size: 18px;
                     font-weight: bold;
-                    border-radius: 4px;
                 }}
                 QPushButton:hover {{
-                    color: {thm['danger']};
-                    background: {thm['danger_light']};
+                    background: {thm['danger']};
+                    color: #ffffff;
                 }}
             """)
+            counterflow_remove_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             pid = item.counterflow_product.counterflow_product_id
             counterflow_remove_btn.clicked.connect(
                 lambda _, p=pid: self._counterflow_remove_item(p)
             )
-            wrapper = QWidget()
-            wl = QHBoxLayout(wrapper)
-            wl.setContentsMargins(4, 0, 4, 0)
-            wl.addWidget(counterflow_remove_btn)
-            self._counterflow_bill_table.setCellWidget(row, 5, wrapper)
+            self._counterflow_bill_table.setCellWidget(row, 5, counterflow_remove_btn)
 
         self._counterflow_total_label.setText(
             f"₹{self.counterflow_billing.counterflow_total:,.2f}"
@@ -763,7 +760,8 @@ class CounterFlowPOSScreen(QWidget):
         self._counterflow_refresh_table()
         QTimer.singleShot(100, self._counterflow_barcode_input.setFocus)
 
-    def _cf_item(self, text: str) -> QTableWidgetItem:
+    def _cf_item(self, text: str, align=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter) -> QTableWidgetItem:
         item = QTableWidgetItem(text)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        item.setTextAlignment(align)
         return item

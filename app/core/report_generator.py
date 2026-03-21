@@ -208,7 +208,7 @@ class CounterFlowReportGenerator:
                 CounterFlowProduct.counterflow_product_id
             )
             .group_by(CounterFlowProduct.counterflow_product_id)
-            .order_by(func.sum(CounterFlowInvoiceItem.counterflow_quantity).desc())
+            .order_by(func.sum(CounterFlowInvoiceItem.counterflow_quantity * CounterFlowInvoiceItem.counterflow_unit_price).desc())
             .limit(limit)
             .all()
         )

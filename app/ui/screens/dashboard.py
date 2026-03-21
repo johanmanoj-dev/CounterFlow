@@ -16,6 +16,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
 from app.ui.components.stat_card import CounterFlowStatCard
+from app.core.auth import counterflow_auth_session
 from app.core.report_generator import CounterFlowReportGenerator
 from app.core.inventory_manager import CounterFlowInventoryManager
 from app.core.customer_manager import CounterFlowCustomerManager
@@ -58,7 +59,7 @@ class CounterFlowDashboardScreen(QWidget):
         """
         counterflow_container = QWidget()
         counterflow_layout    = QVBoxLayout(counterflow_container)
-        counterflow_layout.setContentsMargins(32, 28, 32, 28)
+        counterflow_layout.setContentsMargins(32, 14, 32, 32)
         counterflow_layout.setSpacing(24)
 
         # ── Greeting ───────────────────────────────────────────
@@ -72,13 +73,25 @@ class CounterFlowDashboardScreen(QWidget):
         # ── Recent Invoices ────────────────────────────────────
         counterflow_recent_label = QLabel("Recent Invoices")
         counterflow_recent_label.setStyleSheet(
-            f"font-size: 19px; font-weight: 700; "
+            f"font-size: 17px; font-weight: 700; "
             f"color: {t.counterflow_theme()['text_primary']};"
         )
         counterflow_layout.addWidget(counterflow_recent_label)
 
         self._counterflow_invoice_table = self._counterflow_build_table()
-        counterflow_layout.addWidget(self._counterflow_invoice_table)
+        
+        # Redesign: Wrap table in a card to ensure perfect rounded corners
+        table_card = QFrame()
+        table_card.setObjectName("counterflowCard")
+        table_layout = QVBoxLayout(table_card)
+        
+        # Adding interior padding ensures the table perfectly rests inside 
+        # the frame without any boundary overlapping or radius-clipping issues.
+        table_layout.setContentsMargins(20, 20, 20, 20)
+        table_layout.setSpacing(0)
+        table_layout.addWidget(self._counterflow_invoice_table)
+
+        counterflow_layout.addWidget(table_card)
 
         self._counterflow_scroll.setWidget(counterflow_container)
 
@@ -97,8 +110,12 @@ class CounterFlowDashboardScreen(QWidget):
         else:
             counterflow_greet = "Good evening"
 
-        counterflow_title = QLabel(f"{counterflow_greet}, Admin")
-        counterflow_title_font = QFont("Segoe UI", 25)
+        is_admin = counterflow_auth_session.counterflow_is_admin
+        display_name = counterflow_auth_session.counterflow_display_name
+        target_name = "Admin" if is_admin else display_name
+
+        counterflow_title = QLabel(f"{counterflow_greet}, {target_name}")
+        counterflow_title_font = QFont("Segoe UI", 22)
         counterflow_title_font.setWeight(QFont.Weight.Bold)
         counterflow_title.setFont(counterflow_title_font)
         counterflow_title.setStyleSheet(
@@ -107,7 +124,7 @@ class CounterFlowDashboardScreen(QWidget):
 
         counterflow_sub = QLabel("Here's what's happening with your store today.")
         counterflow_sub.setStyleSheet(
-            f"color: {t.counterflow_theme()['text_secondary']}; font-size: 16px;"
+            f"color: {t.counterflow_theme()['text_secondary']}; font-size: 14px;"
         )
 
         counterflow_layout.addWidget(counterflow_title)
@@ -120,12 +137,12 @@ class CounterFlowDashboardScreen(QWidget):
         counterflow_grid.setContentsMargins(0, 0, 0, 0)
         counterflow_grid.setSpacing(16)
 
-        self._counterflow_card_sales    = CounterFlowStatCard("Today's Sales",       "₹0",    "$")
-        self._counterflow_card_orders   = CounterFlowStatCard("Total Orders",        "0",     "🛒")
-        self._counterflow_card_customers= CounterFlowStatCard("Active Customers",    "0",     "👤")
-        self._counterflow_card_avg      = CounterFlowStatCard("Avg. Order Value",    "₹0",    "↗")
-        self._counterflow_card_credit   = CounterFlowStatCard("Credit Outstanding",  "₹0",    "💳")
-        self._counterflow_card_lowstock = CounterFlowStatCard("Low Stock Items",     "0",     "📦")
+        self._counterflow_card_sales    = CounterFlowStatCard("Today's Sales",       "₹0")
+        self._counterflow_card_orders   = CounterFlowStatCard("Total Orders",        "0")
+        self._counterflow_card_customers= CounterFlowStatCard("Active Customers",    "0")
+        self._counterflow_card_avg      = CounterFlowStatCard("Avg. Order Value",    "₹0")
+        self._counterflow_card_credit   = CounterFlowStatCard("Credit Outstanding",  "₹0")
+        self._counterflow_card_lowstock = CounterFlowStatCard("Low Stock Items",     "0")
 
         counterflow_cards = [
             self._counterflow_card_sales,
@@ -144,7 +161,7 @@ class CounterFlowDashboardScreen(QWidget):
         counterflow_table = QTableWidget()
         counterflow_table.setColumnCount(5)
         counterflow_table.setHorizontalHeaderLabels(
-            ["Invoice #", "Customer", "Total", "Payment", "Time"]
+            ["Invoice", "Customer", "Total", "Payment", "Time"]
         )
         counterflow_table.setAlternatingRowColors(False)
         counterflow_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -243,13 +260,14 @@ class CounterFlowDashboardScreen(QWidget):
 
         badge.setStyleSheet(f"""
             background: {bg};
-            color: {fg};
+            color: {thm['text_primary']};
             border-radius: 10px;
             padding: 2px 10px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: bold;
         """)
         wrapper = QWidget()
+        wrapper.setStyleSheet("background-color: transparent;")
         layout  = QHBoxLayout(wrapper)
         layout.setContentsMargins(8, 4, 8, 4)
         layout.addWidget(badge)

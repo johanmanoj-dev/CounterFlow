@@ -16,6 +16,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
 from app.core.inventory_manager import CounterFlowInventoryManager
+from app.core.auth import counterflow_auth_session
 from app.ui.dialogs.add_product import CounterFlowAddProductDialog
 from app import theme as t
 from app.config import COUNTERFLOW_LOW_STOCK_THRESHOLD, COUNTERFLOW_STOCK_WARNING_THRESHOLD
@@ -35,51 +36,70 @@ class CounterFlowRestockDialog(QDialog):
         thm = t.counterflow_theme()
         self.setStyleSheet(f"background: {thm['bg_surface']};")
 
-        counterflow_layout = QFormLayout(self)
-        counterflow_layout.setContentsMargins(24, 24, 24, 24)
-        counterflow_layout.setSpacing(14)
+        counterflow_layout = QVBoxLayout(self)
+        counterflow_layout.setContentsMargins(32, 28, 32, 32)
+        counterflow_layout.setSpacing(20)
 
+        # Title
         counterflow_title = QLabel("Restock Product")
+        counterflow_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         counterflow_title.setStyleSheet(
-            f"font-size: 19px; font-weight: 700; "
-            f"color: {thm['text_primary']}; margin-bottom: 4px;"
+            f"font-size: 20px; font-weight: 700; "
+            f"color: {thm['text_primary']}; margin-bottom: 12px;"
         )
-        counterflow_layout.addRow(counterflow_title)
+        counterflow_layout.addWidget(counterflow_title)
 
-        counterflow_product_label = QLabel(product_name)
-        counterflow_product_label.setStyleSheet(
-            f"color: {thm['text_secondary']}; font-size: 16px;"
-        )
-        counterflow_layout.addRow("Product:", counterflow_product_label)
+        # ── Side-by-Side Rows ──────────────────────────────────
+        
+        # Row 1: Product Name
+        counterflow_product_row = QHBoxLayout()
+        counterflow_product_label = QLabel("Product:")
+        counterflow_product_label.setStyleSheet(f"color: {thm['text_secondary']}; font-weight: 600; font-size: 15px;")
+        
+        counterflow_product_val = QLabel(product_name)
+        counterflow_product_val.setStyleSheet(f"color: {thm['text_primary']}; font-weight: 700; font-size: 15px;")
+        
+        counterflow_product_row.addWidget(counterflow_product_label)
+        counterflow_product_row.addSpacing(12)
+        counterflow_product_row.addWidget(counterflow_product_val)
+        counterflow_product_row.addStretch()
+        counterflow_layout.addLayout(counterflow_product_row)
 
+        # Row 2: Quantity Input
+        counterflow_qty_row = QHBoxLayout()
+        counterflow_qty_label = QLabel("Quantity to Add:")
+        counterflow_qty_label.setStyleSheet(f"color: {thm['text_secondary']}; font-weight: 600; font-size: 15px;")
+        
         self._counterflow_qty = QSpinBox()
         self._counterflow_qty.setRange(1, 99999)
         self._counterflow_qty.setValue(1)
-        counterflow_layout.addRow("Quantity to Add:", self._counterflow_qty)
+        self._counterflow_qty.setFixedWidth(100)
+        self._counterflow_qty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        counterflow_qty_row.addWidget(counterflow_qty_label)
+        counterflow_qty_row.addSpacing(12)
+        counterflow_qty_row.addWidget(self._counterflow_qty)
+        counterflow_qty_row.addStretch()
+        counterflow_layout.addLayout(counterflow_qty_row)
 
-        # Reason field — logs to StockMovement audit trail so the shop owner
-        # can distinguish supplier deliveries from manual stock corrections.
-        self._counterflow_reason = QLineEdit()
-        self._counterflow_reason.setPlaceholderText(
-            "e.g. Supplier delivery, Stock correction, Opening stock…"
-        )
-        counterflow_layout.addRow("Reason (optional):", self._counterflow_reason)
+        counterflow_layout.addSpacing(12)
 
+        # Buttons
         counterflow_btns = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok |
             QDialogButtonBox.StandardButton.Cancel
         )
+        counterflow_btns.setCenterButtons(False) # Left align matching the form
         counterflow_btns.accepted.connect(self.accept)
         counterflow_btns.rejected.connect(self.reject)
-        counterflow_layout.addRow(counterflow_btns)
+        counterflow_layout.addWidget(counterflow_btns)
 
     def counterflow_get_quantity(self) -> int:
         return self._counterflow_qty.value()
 
     def counterflow_get_reason(self) -> str:
-        """CounterFlow — Returns the reason text, or a sensible default."""
-        counterflow_text = self._counterflow_reason.text().strip()
-        return counterflow_text if counterflow_text else "CounterFlow restock"
+        """CounterFlow — Returns a sensible default since reason is removed."""
+        return "CounterFlow restock"
 
 
 # ── Main Screen ────────────────────────────────────────────────
@@ -96,23 +116,27 @@ class CounterFlowInventoryScreen(QWidget):
     def _counterflow_build(self):
         t.counterflow_theme()
         counterflow_layout = QVBoxLayout(self)
-        counterflow_layout.setContentsMargins(32, 28, 32, 28)
+        counterflow_layout.setContentsMargins(32, 14, 32, 28)
         counterflow_layout.setSpacing(20)
 
         # ── Header ─────────────────────────────────────────────
         counterflow_header = QHBoxLayout()
 
         counterflow_title = QLabel("Inventory")
-        counterflow_title_font = QFont("Segoe UI", 23)
-        counterflow_title_font.setWeight(QFont.Weight.Bold)
-        counterflow_title.setFont(counterflow_title_font)
+        counterflow_title.setStyleSheet("font-size: 18px; font-weight: bold;")
+        counterflow_title.setFixedHeight(46)
+        counterflow_title.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         counterflow_header.addWidget(counterflow_title)
         counterflow_header.addStretch()
 
         self._counterflow_search = QLineEdit()
-        self._counterflow_search.setPlaceholderText("  🔍  Search products...")
+        self._counterflow_search.setPlaceholderText("  ⌕  Search products...")
         self._counterflow_search.setMinimumWidth(240)
         self._counterflow_search.setMinimumHeight(46)
+        
+        counterflow_search_font = self._counterflow_search.font()
+        counterflow_search_font.setPixelSize(17)
+        self._counterflow_search.setFont(counterflow_search_font)
         self._counterflow_search.textChanged.connect(self.counterflow_refresh)
         counterflow_header.addWidget(self._counterflow_search)
 
@@ -127,6 +151,14 @@ class CounterFlowInventoryScreen(QWidget):
         counterflow_restock_btn.clicked.connect(self._counterflow_restock)
         counterflow_header.addWidget(counterflow_restock_btn)
 
+        # ── Admin-only: Remove Product button ──────────────────
+        if counterflow_auth_session.counterflow_is_admin:
+            self._counterflow_remove_btn = QPushButton("🗑  Remove Product")
+            self._counterflow_remove_btn.setObjectName("counterflowDangerBtn")
+            self._counterflow_remove_btn.setMinimumHeight(46)
+            self._counterflow_remove_btn.clicked.connect(self._counterflow_remove_product)
+            counterflow_header.addWidget(self._counterflow_remove_btn)
+
         counterflow_layout.addLayout(counterflow_header)
 
         # ── Table ──────────────────────────────────────────────
@@ -135,7 +167,7 @@ class CounterFlowInventoryScreen(QWidget):
         self._counterflow_table.setHorizontalHeaderLabels(
             ["ID", "Barcode", "Name", "Price", "Stock"]
         )
-        self._counterflow_table.setShowGrid(False)
+        self._counterflow_table.setShowGrid(True)
         self._counterflow_table.setAlternatingRowColors(False)
         self._counterflow_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers
@@ -236,6 +268,9 @@ class CounterFlowInventoryScreen(QWidget):
             self.counterflow_session.commit()
             self.counterflow_refresh()
         except ValueError as e:
+            # Always rollback — keeps session clean even if ValueError
+            # was raised after a partial flush inside the manager.
+            self.counterflow_session.rollback()
             QMessageBox.warning(self, "CounterFlow", str(e))
         except Exception as e:
             self.counterflow_session.rollback()
@@ -280,12 +315,50 @@ class CounterFlowInventoryScreen(QWidget):
             self.counterflow_session.rollback()
             QMessageBox.critical(self, "CounterFlow — Error", str(e))
 
+    def _counterflow_remove_product(self):
+        """CounterFlow — Admin-only: soft-delete selected product."""
+        counterflow_row = self._counterflow_table.currentRow()
+        if counterflow_row < 0:
+            QMessageBox.warning(
+                self, "CounterFlow",
+                "Please select a product row first."
+            )
+            return
+
+        counterflow_product_id   = int(self._counterflow_table.item(counterflow_row, 0).text())
+        counterflow_product_name = self._counterflow_table.item(counterflow_row, 2).text()
+
+        reply = QMessageBox.warning(
+            self,
+            "CounterFlow — Remove Product",
+            f"Remove  \"{counterflow_product_name}\"  from inventory?\n\n"
+            f"The product will be hidden from all screens and the POS scanner.\n"
+            f"Existing invoices and sales history are NOT affected.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            self.counterflow_inv_mgr.counterflow_delete_product(counterflow_product_id)
+            self.counterflow_session.commit()
+            self.counterflow_refresh()
+            QMessageBox.information(
+                self, "CounterFlow — Product Removed",
+                f"\"{counterflow_product_name}\" has been removed from inventory."
+            )
+        except Exception as e:
+            self.counterflow_session.rollback()
+            QMessageBox.critical(self, "CounterFlow — Error", str(e))
+
     def counterflow_refresh_theme(self):
         """CounterFlow — Rebuild table after theme change so stock badges
         pick up dark-mode-aware accent colours."""
         self.counterflow_refresh()
 
-    def _cf_item(self, text: str) -> QTableWidgetItem:
+    def _cf_item(self, text: str, align=Qt.AlignmentFlag.AlignCenter) -> QTableWidgetItem:
         item = QTableWidgetItem(text)
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        item.setTextAlignment(align)
         return item

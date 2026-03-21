@@ -11,6 +11,8 @@ from sqlalchemy import or_
 
 from app.db.models import CounterFlowCustomer
 from app.utils.validators import counterflow_validate_mobile
+from app.core.activity_logger import counterflow_log_action, CounterFlowActions
+from app.core.auth import counterflow_auth_session
 from app.config import (
     COUNTERFLOW_DEFAULT_CREDIT_LIMIT,
     COUNTERFLOW_DEBUG,
@@ -116,7 +118,75 @@ class CounterFlowCustomerManager:
                 f"({counterflow_customer.counterflow_mobile})"
             )
 
+        # Audit log
+        if counterflow_auth_session.counterflow_is_authenticated:
+            counterflow_log_action(
+                session=self.counterflow_session,
+                user_id=counterflow_auth_session.counterflow_user_id,
+                action_type=CounterFlowActions.CUSTOMER_CREATED,
+                entity_type="customer",
+                entity_id=counterflow_customer.counterflow_customer_id,
+                details=f"Name: {counterflow_customer.counterflow_name} | Mobile: {counterflow_customer.counterflow_mobile}",
+            )
+
         return counterflow_customer, True
+
+    # ── Delete ─────────────────────────────────────────────────
+
+    def counterflow_delete_customer(
+        self,
+        customer_id:  int,
+        clear_debt:   bool = False,
+    ) -> str:
+        """
+        CounterFlow — Permanently delete a customer record (Admin only).
+
+        Args:
+            customer_id: Primary key of the customer to remove.
+            clear_debt:  If True, zero the credit balance before deleting
+                         (for "delete and forgive debt").
+                         If False and the customer has an outstanding balance,
+                         the balance is simply lost — caller must confirm this.
+
+        Returns the customer name for confirmation/audit messages.
+        Raises ValueError if customer not found.
+        """
+        customer = self.counterflow_session.get(CounterFlowCustomer, customer_id)
+        if customer is None:
+            raise ValueError(f"[CounterFlow] Customer ID {customer_id} not found.")
+
+        customer_name   = customer.counterflow_name
+        customer_mobile = customer.counterflow_mobile
+        balance_at_delete = customer.counterflow_credit_balance
+
+        if clear_debt and balance_at_delete > 0:
+            customer.counterflow_credit_balance = 0.0
+
+        detail_parts = [
+            f"Name: {customer_name}",
+            f"Mobile: {customer_mobile}",
+            f"Balance at deletion: ₹{balance_at_delete:,.2f}",
+            "Debt cleared before deletion" if clear_debt and balance_at_delete > 0
+            else "Deleted with outstanding debt" if balance_at_delete > 0
+            else "No outstanding debt",
+        ]
+
+        self.counterflow_session.delete(customer)
+
+        if counterflow_auth_session.counterflow_is_authenticated:
+            counterflow_log_action(
+                session=self.counterflow_session,
+                user_id=counterflow_auth_session.counterflow_user_id,
+                action_type=CounterFlowActions.CUSTOMER_DELETED,
+                entity_type="customer",
+                entity_id=customer_id,
+                details=" | ".join(detail_parts),
+            )
+
+        if COUNTERFLOW_DEBUG:
+            print(f"[CounterFlow] Customer deleted: {customer_name} (id={customer_id})")
+
+        return customer_name
 
     # ── Credit Operations ──────────────────────────────────────
 
@@ -171,6 +241,17 @@ class CounterFlowCustomerManager:
                 f"[CounterFlow] Credit payment ₹{amount:,.2f} recorded for "
                 f"{counterflow_customer.counterflow_name}. "
                 f"Remaining balance: ₹{counterflow_customer.counterflow_credit_balance:,.2f}"
+            )
+
+        # Audit log
+        if counterflow_auth_session.counterflow_is_authenticated:
+            counterflow_log_action(
+                session=self.counterflow_session,
+                user_id=counterflow_auth_session.counterflow_user_id,
+                action_type=CounterFlowActions.DEBT_CLEARED,
+                entity_type="customer",
+                entity_id=counterflow_customer.counterflow_customer_id,
+                details=f"Amount cleared: ₹{amount:,.2f} | Remaining: ₹{counterflow_customer.counterflow_credit_balance:,.2f}",
             )
 
         return counterflow_customer
